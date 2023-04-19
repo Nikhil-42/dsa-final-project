@@ -48,7 +48,7 @@ def animate_agents(maze: np.ndarray):
     frame[:, :, 1] = maze
     frame[:, :, 2] = maze
     
-    video_writer = cv2.VideoWriter('maze.avi', cv2.VideoWriter_fourcc(*'XVID'), 30, (frame.shape[1], frame.shape[0]))
+    video_writer = cv2.VideoWriter('generated/maze.avi', cv2.VideoWriter_fourcc(*'XVID'), 30, (frame.shape[1], frame.shape[0]))
 
     try:
         # Define the agent's starting position

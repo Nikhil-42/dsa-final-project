@@ -77,4 +77,4 @@ if __name__ == '__main__':
     # Export the maze as an image
     from PIL import Image
     # Scale up to help with interpolation
-    Image.fromarray(maze*255).resize((width*16, height*16), Image.NEAREST).save('maze.png')
+    Image.fromarray(maze*255).resize((width*16, height*16), Image.NEAREST).save('generated/maze.png')
