@@ -23,9 +23,11 @@ def build_adj_list(maze: np.ndarray):
     neighbor_deltas = np.array(((0, -1), (0, 1), (-1, 0), (1, 0)))
     
     # Conversion factor from pixel height delta. Maps [-256,256] to (0, inf)
-    remap = lambda x: math.exp(x/16.0)
+    # Divide by 88.7228390619 = ln(floatmax) | 256 / 88.7228390619 = 2.88539
+    remap = lambda x: math.exp(x/2.85)
     
     adj_list = (np.empty((maze.shape[0] * maze.shape[1], 4), dtype=np.float32), np.empty((maze.shape[0] * maze.shape[1], 4), dtype=np.int32))
+    
     for i in numba.prange(adj_list[0].shape[0]):
         x, y = i % maze.shape[1], i // maze.shape[1]
         
