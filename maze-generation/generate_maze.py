@@ -1,7 +1,37 @@
 import random
 import numpy as np
 import numba
+import cv2
 
+# @numba.jit(cache=True, forceobj=True)
+def add_terrain(maze, average_radius=60, colors=((255,0,0), (0,255,0), (0,0,255))):
+    height, width, channels = maze.shape
+    # size length^2 / average radius
+    amount_of_circles = int((height / average_radius)**2)
+    color_texture = np.zeros_like(maze)
+
+    for _ in range(amount_of_circles):
+        # randomizes coordinates
+        random_x = random.randint(1, width)
+        random_y = random.randint(1, height)
+        random_color_index = np.random.randint(len(colors))
+        random_color = colors[random_color_index]
+
+        radius = int(random.normalvariate(average_radius, 5))
+        center = (random_x, random_y)
+
+        # draws the circle
+        cv2.circle(color_texture, center, radius, random_color, -1)
+
+    # Interpolate the color texture to the maze
+    kernel_size = (average_radius // 2) + (average_radius % 2 + 1)
+    cv2.blur(color_texture, (kernel_size, kernel_size), color_texture)
+    
+    # adds color to the maze
+    maze = cv2.add(maze, color_texture)
+    
+    return  maze
+    
 # Maze Generation Logic from https://inventwithpython.com/recursion/chapter11.html
 
 @numba.njit(cache=True)
@@ -60,21 +90,24 @@ def generate_maze(width: int, height: int):
     return grid
 
 if __name__ == '__main__':
-    width = 317
-    height = 317
+    WIDTH = 317
+    HEIGHT = 317
     
-    maze = generate_maze(width, height)
+    maze = generate_maze(WIDTH, HEIGHT)
     
-    # # Print the maze to the console
-    # for i in range(maze.shape[0]):
-    #     for j in range(maze.shape[1]):
-    #         if maze[i, j] == 0:
-    #             print('  ', end='')
-    #         else:
-    #             print('##', end='')
-    #     print()
+    # Convert to BGR
+    maze = cv2.cvtColor((maze * 255).astype(np.uint8), cv2.COLOR_GRAY2BGR)
     
-    # Export the maze as an image
-    from PIL import Image
-    # Scale up to help with interpolation
-    Image.fromarray(maze*255).resize((width*16, height*16), Image.NEAREST).save('generated/maze.png')
+    # Open center
+    maze[HEIGHT//2-2:HEIGHT//2+3, WIDTH//2-2:WIDTH//2+3] = [0, 0, 0]
+    
+    GREEN = (0, 102, 0)
+    BLUE = (0, 0, 204)
+    YELLOW = (204, 204, 0)
+    
+    AVERAGE_RADIUS = 40
+    
+    maze = add_terrain(maze, AVERAGE_RADIUS, (GREEN, BLUE, YELLOW))
+    
+    
+    cv2.imwrite("generated/maze.png", maze)
