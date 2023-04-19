@@ -36,7 +36,7 @@ def bfs(adj_list: tuple[np.ndarray, np.ndarray], source: int, stop_node=None):
     output_table = (-np.ones(len(adj_list[0]), dtype=np.float32), -np.ones(len(adj_list[0]), dtype=np.int32))
     """A list of (distance_array, source_array) nodes that stores the shortest paths for each node"""
     
-    path_queue: Queue[tuple[float, int, int]] = PriorityQueue()
+    path_queue: Queue[tuple[float, int, int]] = Queue()
     """A queue of the possible paths to explore sorted by path length"""
     
     for edge_weight, destination in zip(adj_list[0][source], adj_list[1][source]):
@@ -56,4 +56,3 @@ def bfs(adj_list: tuple[np.ndarray, np.ndarray], source: int, stop_node=None):
                         path_queue.put((current_distance + edge_weight, destination, current_node))
 
     return output_table
-    
