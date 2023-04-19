@@ -1,15 +1,11 @@
 import cv2
 import math
 import numba
+import random
 import numpy as np
 from searches import *
 from time import sleep
-'''
-    Grass
-    Water
-    Snow
-    Sand
-'''
+
 
 @numba.njit(cache=True, parallel=True)
 def build_adj_list(maze: np.ndarray):
@@ -69,8 +65,8 @@ def animate_agents(maze: np.ndarray):
         # Run the search algorithms until they meet
         while any(chaser_pos != runner_pos):
             try:
-                chaser_search_pos = next(chaser_pathing)
-                frame[chaser_search_pos // len(maze), chaser_search_pos % len(maze), 0] = 255
+               chaser_search_pos = next(chaser_pathing)
+               frame[chaser_search_pos // len(maze), chaser_search_pos % len(maze), 0] = 255
             except StopIteration as e:
                 if np.array_equal(chaser_pos, runner_pos):
                     break
@@ -79,8 +75,8 @@ def animate_agents(maze: np.ndarray):
                     chaser_pathing = dijkstra(adj_list, chaser_pos[0] + chaser_pos[1] * maze.shape[1], runner_pos_view)
             
             try:
-                runner_search_pos = next(runner_pathing)
-                frame[runner_search_pos // len(maze), runner_search_pos % len(maze), 2] = 255
+               runner_search_pos = next(runner_pathing)
+               frame[runner_search_pos // len(maze), runner_search_pos % len(maze), 2] = 255
             except StopIteration as e:
                 if np.array_equal(runner_pos, chaser_pos):
                     break
@@ -94,6 +90,6 @@ def animate_agents(maze: np.ndarray):
         raise e
     
 if __name__ == '__main__':
-    maze = cv2.imread("maze.png", cv2.IMREAD_GRAYSCALE)
-    maze = cv2.resize(maze, (maze.shape[0] // 16, maze.shape[1] // 16), interpolation=cv2.INTER_NEAREST)
+    maze = cv2.imread("generated/maze.png", cv2.IMREAD_GRAYSCALE)
+
     animate_agents(maze)

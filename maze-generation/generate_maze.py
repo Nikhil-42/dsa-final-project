@@ -1,9 +1,45 @@
 import random
 import numpy as np
 import numba
+import cv2
 
 # Maze Generation Logic from https://inventwithpython.com/recursion/chapter11.html
+def add_terrain(maze):
+    # picks average radius
+    average_radius = 60
+    height, width, channels = maze.shape
+    # size length^2 / average radius
+    amount_of_circles = int(height**2 / average_radius**2)
+    color_texture = np.zeros_like(maze)
 
+
+    # changes colors
+    green = (0, 102, 0)
+    blue = (0, 0, 204)
+    yellow = (204, 204, 0)
+    colors = [green, blue,  yellow]
+
+    for _ in range(amount_of_circles):
+        # randomizes coordinates
+        random_x = random.randint(1, width)
+        random_y = random.randint(1, height)
+        random_color = random.choice(colors)
+
+        radius = int(random.normalvariate(average_radius, 5))
+        center = (random_x, random_y)
+
+        # draws the circle
+        cv2.circle(color_texture, center, radius, random_color, -1)
+
+    # adds color to the maze
+    maze = cv2.add(maze, color_texture)
+
+    
+    #cv2.imshow('Circles', maze)
+    #cv2.waitKey(0)
+
+    return  maze
+    
 @numba.njit(cache=True)
 def generate_maze(width: int, height: int):
     """Generate a maze using the depth-first search algorithm."""
@@ -77,4 +113,14 @@ if __name__ == '__main__':
     # Export the maze as an image
     from PIL import Image
     # Scale up to help with interpolation
+<<<<<<< HEAD
     Image.fromarray(maze*255).resize((width*16, height*16), Image.NEAREST).save('generated/maze.png')
+
+    maze = cv2.imread("generated/maze.png")
+    maze = cv2.resize(maze, (maze.shape[0] // 16, maze.shape[1] // 16), interpolation=cv2.INTER_NEAREST)
+    maze = add_terrain(maze)
+    cv2.imwrite("generated/maze.png", maze)
+    
+=======
+    Image.fromarray(maze*255).resize((width*16, height*16), Image.NEAREST).save('generated/maze.png')
+>>>>>>> bd24f25c2df64f5382ea92d2ed5aa7053df3e381
