@@ -4,6 +4,12 @@ import numba
 import numpy as np
 from searches import *
 from time import sleep
+'''
+    Grass
+    Water
+    Snow
+    Sand
+'''
 
 @numba.njit(cache=True, parallel=True)
 def build_adj_list(maze: np.ndarray):
