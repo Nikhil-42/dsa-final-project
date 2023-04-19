@@ -113,10 +113,14 @@ if __name__ == '__main__':
     # Export the maze as an image
     from PIL import Image
     # Scale up to help with interpolation
-    Image.fromarray(maze*255).resize((width*16, height*16), Image.NEAREST).save('maze.png')
+<<<<<<< HEAD
+    Image.fromarray(maze*255).resize((width*16, height*16), Image.NEAREST).save('generated/maze.png')
 
-    maze = cv2.imread("maze.png")
+    maze = cv2.imread("generated/maze.png")
     maze = cv2.resize(maze, (maze.shape[0] // 16, maze.shape[1] // 16), interpolation=cv2.INTER_NEAREST)
     maze = add_terrain(maze)
-    cv2.imwrite("maze.png", maze)
+    cv2.imwrite("generated/maze.png", maze)
     
+=======
+    Image.fromarray(maze*255).resize((width*16, height*16), Image.NEAREST).save('generated/maze.png')
+>>>>>>> bd24f25c2df64f5382ea92d2ed5aa7053df3e381

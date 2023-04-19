@@ -19,9 +19,11 @@ def build_adj_list(maze: np.ndarray):
     neighbor_deltas = np.array(((0, -1), (0, 1), (-1, 0), (1, 0)))
     
     # Conversion factor from pixel height delta. Maps [-256,256] to (0, inf)
-    remap = lambda x: math.exp(x/16.0)
+    # Divide by 88.7228390619 = ln(floatmax) | 256 / 88.7228390619 = 2.88539
+    remap = lambda x: math.exp(x/2.85)
     
     adj_list = (np.empty((maze.shape[0] * maze.shape[1], 4), dtype=np.float32), np.empty((maze.shape[0] * maze.shape[1], 4), dtype=np.int32))
+    
     for i in numba.prange(adj_list[0].shape[0]):
         x, y = i % maze.shape[1], i // maze.shape[1]
         
@@ -42,7 +44,7 @@ def animate_agents(maze: np.ndarray):
     frame[:, :, 1] = maze
     frame[:, :, 2] = maze
     
-    video_writer = cv2.VideoWriter('maze.avi', cv2.VideoWriter_fourcc(*'XVID'), 30, (frame.shape[1], frame.shape[0]))
+    video_writer = cv2.VideoWriter('generated/maze.avi', cv2.VideoWriter_fourcc(*'XVID'), 30, (frame.shape[1], frame.shape[0]))
 
     try:
         # Define the agent's starting position
@@ -88,6 +90,6 @@ def animate_agents(maze: np.ndarray):
         raise e
     
 if __name__ == '__main__':
-    maze = cv2.imread("maze.png", cv2.IMREAD_GRAYSCALE)
+    maze = cv2.imread("generated/maze.png", cv2.IMREAD_GRAYSCALE)
 
     animate_agents(maze)
