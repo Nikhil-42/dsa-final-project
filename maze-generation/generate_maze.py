@@ -2,6 +2,8 @@ import random
 import numpy as np
 import numba
 
+# Maze Generation Logic from https://inventwithpython.com/recursion/chapter11.html
+
 @numba.njit(cache=True)
 def generate_maze(width: int, height: int):
     """Generate a maze using the depth-first search algorithm."""
@@ -60,9 +62,10 @@ def generate_maze(width: int, height: int):
 if __name__ == '__main__':
     width = 317
     height = 317
-    maze = generate_maze(317, 317)
     
-    # Print the maze to the console
+    maze = generate_maze(width, height)
+    
+    # # Print the maze to the console
     # for i in range(maze.shape[0]):
     #     for j in range(maze.shape[1]):
     #         if maze[i, j] == 0:
