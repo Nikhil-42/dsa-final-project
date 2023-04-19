@@ -1,6 +1,12 @@
 # Ignore blender backups
 *.blend1
 
+# Ignore generated files
+generated/*
+
+# Ignore Jaiden's weird files
+**/*.DS_Store
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
