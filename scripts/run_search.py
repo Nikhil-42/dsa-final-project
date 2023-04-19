@@ -88,5 +88,4 @@ def animate_agents(maze: np.ndarray):
     
 if __name__ == '__main__':
     maze = cv2.imread("generated/maze.png", cv2.IMREAD_GRAYSCALE)
-    maze = cv2.resize(maze, maze.shape[:2], fx=1/16, fy=1/16, interpolation=cv2.INTER_NEAREST)
     animate_agents(maze)
