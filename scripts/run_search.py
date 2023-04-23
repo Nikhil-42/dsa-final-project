@@ -54,8 +54,8 @@ def animate_agents(maze: np.ndarray):
     try:
         # Define the agent's starting position
         bfs_runner_pos = [1, 1]
-        dijkstra_runner_pos = [313, 1]
-        a_star_runner_pos = [313, 313]
+        dijkstra_runner_pos = [313, 313]
+        a_star_runner_pos = [1, 313]
         center = (maze.shape[1] * maze.shape[0]) // 2
         
         # Define the adjacency list for the maze
@@ -65,7 +65,7 @@ def animate_agents(maze: np.ndarray):
         bfs_runner_pathing = bfs(adj_list, bfs_runner_pos[0] + bfs_runner_pos[1] * maze.shape[1], center)
         dijkstra_runner_pathing = dijkstra(adj_list, dijkstra_runner_pos[0] + dijkstra_runner_pos[1] * maze.shape[1], center)
 
-        a_star_runner_pathing = a_star(adj_list, a_star_runner_pos[0] + a_star_runner_pos[1] * maze.shape[1], maze.shape[1],manhattan_distance ,center)
+        a_star_runner_pathing = a_star(adj_list, a_star_runner_pos[0] + a_star_runner_pos[1] * maze.shape[1],maze.shape[1], manhattan_distance ,center)
 
         
         # Run the search algorithms until they meet

@@ -77,7 +77,7 @@ def bellman_ford(adj_list: tuple[np.ndarray, np.ndarray], source: int, stop_node
     return output_table
 
 
-def a_star(adj_list: tuple[np.ndarray, np.ndarray], source: int, width: int,heuristic, stop_node=None):
+def a_star(adj_list: tuple[np.ndarray, np.ndarray], source: int, width: int, heuristic, stop_node=None):
     visited = set()
     queue = PriorityQueue()
     start_node = (heuristic(source, stop_node, width), source, [])
@@ -90,11 +90,12 @@ def a_star(adj_list: tuple[np.ndarray, np.ndarray], source: int, width: int,heur
             optimal_path = [current_node]
             for parent in reversed(path):
                 optimal_path.append(parent)
-            return optimal_path
+                current_node = parent
+                return optimal_path
         if current_node not in visited:
             visited.add(current_node)
             for neighbor, weight in zip(adj_list[1][current_node], adj_list[0][current_node]):
                 if neighbor not in visited and weight < np.inf:
-                    queue.put((heuristic(neighbor, stop_node, width), neighbor, path + [current_node]))
-        return None
+                    priority = heuristic(neighbor, stop_node, width)
+                    queue.put((priority, neighbor, path + [current_node]))
     
