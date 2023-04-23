@@ -55,8 +55,8 @@ def animate_agents(maze: np.ndarray):
     try:
         # Define the agent's starting position
         bfs_runner_pos = [1, 1]
-        dijkstra_runner_pos = [313, 313]
-        a_star_runner_pos = [1, 313]
+        dijkstra_runner_pos = [1, 313]
+        a_star_runner_pos = [1, 1]
         bellman_ford_pos = [313, 313]
         center = (maze.shape[1] * maze.shape[0]) // 2
         
