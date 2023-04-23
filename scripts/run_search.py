@@ -74,7 +74,7 @@ def animate_agents(maze: np.ndarray):
         bfs_found = False
         dijkstra_found = False
         a_star_found = False
-        bellman_ford_found = False
+        bellman_ford_found = True 
 
         start_time = time.time()
         bfs_time = 0
@@ -116,15 +116,15 @@ def animate_agents(maze: np.ndarray):
                         a_star_found = True
             
             # Bellman Ford
-            if not bellman_ford_found:
-                try:
-                    bellman_ford_runner_search_pos = next(bellman_ford_pathing)
-                    frame[bellman_ford_runner_search_pos // len(maze), bellman_ford_runner_search_pos % len(maze), 1] = 120
-                except StopIteration as e:
-                    if bellman_ford_runner_search_pos == center:
-                        end_time = time.time()
-                        bellman_ford_time = end_time - start_time
-                        bellman_ford_found = True
+            #if not bellman_ford_found:
+            #    try:
+            #        bellman_ford_runner_search_pos = next(bellman_ford_pathing)
+            #        frame[bellman_ford_runner_search_pos // len(maze), bellman_ford_runner_search_pos % len(maze), 1] = 120
+            #    except StopIteration as e:
+            #        if bellman_ford_runner_search_pos == center:
+            #            end_time = time.time()
+            #            bellman_ford_time = end_time - start_time
+            #            bellman_ford_found = True
 
             video_writer.write(frame)
         print("BFS time: ", bfs_time)
