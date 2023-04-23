@@ -55,17 +55,16 @@ def bfs(adj_list, start_node, target_node):
 
 # Bellman Ford pseudocode from https://www.geeksforgeeks.org/bellman-ford-algorithm-dp-23/
 def bellman_ford(adj_list: tuple[np.ndarray, np.ndarray], source: int, stop_node=None):
-    """Takes an adjacency list of (weight_array, destination_array) edge entries where the index is the from node
-    as well as a source and returns a table embedding the shortest path for each destination node"""
-    
+ # initialize the output table
     output_table = (np.full(len(adj_list[0]), np.inf, dtype=np.float32), -np.ones(len(adj_list[0]), dtype=np.int32))
-    """A list of (distance_array, source_array) nodes that stores the shortest paths for each node"""
-    
+
+    # set the distance from the source node to itself to 0
     output_table[0][source] = 0
     output_table[1][source] = source
-    
-    for _ in range(len(adj_list[0]) - 1):
-        for node_index, (weight_array, destination_array) in enumerate(adj_list):
+
+    # iterate over all edges and relax them
+    for node_index in range(len(adj_list[0]) - 1):
+        for i, (weight_array, destination_array) in enumerate(adj_list):
             for edge_weight, destination in zip(weight_array, destination_array):
                 if output_table[0][destination] > output_table[0][node_index] + edge_weight:
                     output_table[0][destination] = output_table[0][node_index] + edge_weight
@@ -73,9 +72,14 @@ def bellman_ford(adj_list: tuple[np.ndarray, np.ndarray], source: int, stop_node
                     yield destination
                     if destination == stop_node:
                         return output_table
-    
-    return output_table
 
+    # check for negative weight cycles
+    for node_index, (weight_array, destination_array) in enumerate(adj_list):
+        for edge_weight, destination in zip(weight_array, destination_array):
+            if output_table[0][destination] > output_table[0][node_index] + edge_weight:
+                raise ValueError("Graph contains negative weight cycle")
+
+    return output_table
 
 def a_star(adj_list: tuple[np.ndarray, np.ndarray], source: int, width: int, heuristic, stop_node=None):
     visited = set()

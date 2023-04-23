@@ -57,6 +57,7 @@ def animate_agents(maze: np.ndarray):
         bfs_runner_pos = [1, 1]
         dijkstra_runner_pos = [313, 313]
         a_star_runner_pos = [1, 313]
+        bellman_ford_pos = [313, 313]
         center = (maze.shape[1] * maze.shape[0]) // 2
         
         # Define the adjacency list for the maze
@@ -65,20 +66,22 @@ def animate_agents(maze: np.ndarray):
         # Instantiate the agents' search algorithms
         bfs_runner_pathing = bfs(adj_list, bfs_runner_pos[0] + bfs_runner_pos[1] * maze.shape[1], center)
         dijkstra_runner_pathing = dijkstra(adj_list, dijkstra_runner_pos[0] + dijkstra_runner_pos[1] * maze.shape[1], center)
-
         a_star_runner_pathing = a_star(adj_list, a_star_runner_pos[0] + a_star_runner_pos[1] * maze.shape[1],maze.shape[1], manhattan_distance ,center)
+        bellman_ford_pathing = bellman_ford(adj_list, bellman_ford_pos[0] + bellman_ford_pos[1] * maze.shape[1], center)
 
         
         # Run the search algorithms until they meet
         bfs_found = False
         dijkstra_found = False
         a_star_found = False
+        bellman_ford_found = False
 
         start_time = time.time()
         bfs_time = 0
         dijkstra_time = 0
         a_star_time = 0
-        while not (bfs_found and dijkstra_found and a_star_found ):
+        bellman_ford_time = 0
+        while not (bfs_found and dijkstra_found and a_star_found and bellman_ford_found):
             # BFS
             if not bfs_found:
                 try:
@@ -111,11 +114,23 @@ def animate_agents(maze: np.ndarray):
                         end_time = time.time()
                         a_star_time= end_time - start_time
                         a_star_found = True
+            
+            # Bellman Ford
+            if not bellman_ford_found:
+                try:
+                    bellman_ford_runner_search_pos = next(bellman_ford_pathing)
+                    frame[bellman_ford_runner_search_pos // len(maze), bellman_ford_runner_search_pos % len(maze), 1] = 120
+                except StopIteration as e:
+                    if bellman_ford_runner_search_pos == center:
+                        end_time = time.time()
+                        bellman_ford_time = end_time - start_time
+                        bellman_ford_found = True
 
             video_writer.write(frame)
         print("BFS time: ", bfs_time)
         print("Dijkstra time: ", dijkstra_time)
         print("A* time: ", a_star_time)
+        print("Bellman Ford time: ", bellman_ford_time)
     except Exception as e:
         video_writer.release()
         raise e
