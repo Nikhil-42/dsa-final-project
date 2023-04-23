@@ -3,6 +3,7 @@ import math
 import numba
 import numpy as np
 from searches import *
+import time
 
 @numba.njit(cache=True, parallel=True)
 def build_adj_list(maze: np.ndarray):
@@ -73,6 +74,10 @@ def animate_agents(maze: np.ndarray):
         dijkstra_found = False
         a_star_found = False
 
+        start_time = time.time()
+        bfs_time = 0
+        dijkstra_time = 0
+        a_star_time = 0
         while not (bfs_found and dijkstra_found and a_star_found ):
             # BFS
             if not bfs_found:
@@ -81,6 +86,8 @@ def animate_agents(maze: np.ndarray):
                     frame[bfs_runner_search_pos // len(maze), bfs_runner_search_pos % len(maze), 2] = 255
                 except StopIteration as e:
                     if bfs_runner_search_pos == center:
+                        end_time = time.time()
+                        bfs_time = end_time - start_time
                         bfs_found = True
             
             # Dijkstra's
@@ -90,6 +97,8 @@ def animate_agents(maze: np.ndarray):
                     frame[dijkstra_runner_search_pos // len(maze), dijkstra_runner_search_pos % len(maze), 0] = 255 
                 except StopIteration as e:
                     if dijkstra_runner_search_pos == center:
+                        end_time = time.time()
+                        dijkstra_time= end_time - start_time
                         dijkstra_found = True
             
             # A_Star
@@ -99,9 +108,14 @@ def animate_agents(maze: np.ndarray):
                     frame[a_star_runner_search_pos // len(maze), a_star_runner_search_pos % len(maze), 1] = 255
                 except StopIteration as e:
                     if a_star_runner_search_pos == center:
+                        end_time = time.time()
+                        a_star_time= end_time - start_time
                         a_star_found = True
 
             video_writer.write(frame)
+        print("BFS time: ", bfs_time)
+        print("Dijkstra time: ", dijkstra_time)
+        print("A* time: ", a_star_time)
     except Exception as e:
         video_writer.release()
         raise e
