@@ -1,9 +1,37 @@
 import cv2
 import math
 import numba
+import ffmpeg
 import numpy as np
 from searches import *
 import time
+
+class VideoWriter:
+    def __init__(self, filepath, fps, shape, input_args: dict = {}, output_args: dict = {}):
+        input_args['framerate'] = fps
+        input_args['pix_fmt'] = 'rgb24'
+        input_args['s'] = '{}x{}'.format(*shape)
+        self.filepath = filepath
+        self.shape = shape
+        self.input_args = input_args
+        self.output_args = output_args
+        self.process = (
+            ffmpeg
+                .input('pipe:', format='rawvideo', **input_args)
+                .output(self.filepath, **output_args)
+                .overwrite_output()
+                .run_async(pipe_stdin=True)
+        )
+    
+    def write(self, frame): 
+        self.process.stdin.write(
+            frame.astype(np.uint8).tobytes()
+        )
+
+    def release(self):
+        self.process.stdin.close()
+        self.process.wait()
+
 
 @numba.njit(cache=True, parallel=True)
 def build_adj_list(maze: np.ndarray):
@@ -50,14 +78,17 @@ def animate_agents(maze: np.ndarray):
     frame[:, :, 1] = maze
     frame[:, :, 2] = maze
     
-    video_writer = cv2.VideoWriter('generated/maze.avi', cv2.VideoWriter_fourcc(*'XVID'), 300, (frame.shape[1], frame.shape[0]))
+    # ffmpeg -i generated/video/maze_%02d.png -r 360 maze.mp4 to covert folder of pngs to video
+    video_writer = VideoWriter('generated/maze.avi', 360, (frame.shape[1], frame.shape[0]))
 
     try:
         # Define the agent's starting position
+        last_y = maze.shape[0] - 1
+        last_x = maze.shape[1] - 1
         bfs_runner_pos = [1, 1]
-        dijkstra_runner_pos = [1, 313]
-        a_star_runner_pos = [1, 1]
-        bellman_ford_pos = [313, 313]
+        dijkstra_runner_pos = [last_x, last_y]
+        a_star_runner_pos = [1, last_y]
+        bellman_ford_pos = [last_x, last_y]
         center = (maze.shape[1] * maze.shape[0]) // 2
         
         # Define the adjacency list for the maze
@@ -73,7 +104,7 @@ def animate_agents(maze: np.ndarray):
         # Run the search algorithms until they meet
         bfs_found = False
         dijkstra_found = False
-        a_star_found = False
+        a_star_found = True 
         bellman_ford_found = True 
 
         start_time = time.time()
@@ -85,56 +116,57 @@ def animate_agents(maze: np.ndarray):
             # BFS
             if not bfs_found:
                 try:
+                    start_time = time.time()
                     bfs_runner_search_pos = next(bfs_runner_pathing)
+                    bfs_time += time.time() - start_time
                     frame[bfs_runner_search_pos // len(maze), bfs_runner_search_pos % len(maze), 2] = 255
                 except StopIteration as e:
-                    if bfs_runner_search_pos == center:
-                        end_time = time.time()
-                        bfs_time = end_time - start_time
-                        bfs_found = True
+                    bfs_found = (bfs_runner_search_pos == center)
             
             # Dijkstra's
             if not dijkstra_found:
                 try:
+                    start_time = time.time()
                     dijkstra_runner_search_pos = next(dijkstra_runner_pathing)
+                    dijkstra_time += time.time() - start_time
                     frame[dijkstra_runner_search_pos // len(maze), dijkstra_runner_search_pos % len(maze), 0] = 255 
                 except StopIteration as e:
-                    if dijkstra_runner_search_pos == center:
-                        end_time = time.time()
-                        dijkstra_time= end_time - start_time
-                        dijkstra_found = True
+                    dijkstra_found = dijkstra_runner_search_pos == center
             
             # A_Star
             if not a_star_found:
                 try:
+                    start_time = time.time()
                     a_star_runner_search_pos = next(a_star_runner_pathing)
+                    a_star_time += time.time() - start_time
                     frame[a_star_runner_search_pos // len(maze), a_star_runner_search_pos % len(maze), 1] = 255
                 except StopIteration as e:
-                    if a_star_runner_search_pos == center:
-                        end_time = time.time()
-                        a_star_time= end_time - start_time
-                        a_star_found = True
+                    a_star_found = (a_star_runner_search_pos == center)
             
             # Bellman Ford
-            #if not bellman_ford_found:
-            #    try:
-            #        bellman_ford_runner_search_pos = next(bellman_ford_pathing)
-            #        frame[bellman_ford_runner_search_pos // len(maze), bellman_ford_runner_search_pos % len(maze), 1] = 120
-            #    except StopIteration as e:
-            #        if bellman_ford_runner_search_pos == center:
-            #            end_time = time.time()
-            #            bellman_ford_time = end_time - start_time
-            #            bellman_ford_found = True
+            if not bellman_ford_found:
+               try:
+                   start_time = time.time()
+                   bellman_ford_runner_search_pos = next(bellman_ford_pathing)
+                   bellman_ford_time += time.time() - start_time
+                   frame[bellman_ford_runner_search_pos // len(maze), bellman_ford_runner_search_pos % len(maze), 1] = 120
+               except StopIteration as e:
+                   bellman_ford_found = (bellman_ford_runner_search_pos == center)
 
             video_writer.write(frame)
+    except Exception as e:
+        video_writer.release()
+        raise e
+    finally:
+        time.sleep(1)
+        print()
         print("BFS time: ", bfs_time)
         print("Dijkstra time: ", dijkstra_time)
         print("A* time: ", a_star_time)
         print("Bellman Ford time: ", bellman_ford_time)
-    except Exception as e:
-        video_writer.release()
-        raise e
-    
+        
+
+
 if __name__ == '__main__':
     maze = cv2.imread("generated/maze.png", cv2.IMREAD_GRAYSCALE)
     animate_agents(maze)
