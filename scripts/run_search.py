@@ -32,6 +32,14 @@ def build_adj_list(maze: np.ndarray):
     
     return adj_list
 
+# this is for our A* algorithm
+def manhattan_distance(source, stop_node, maze_width):
+    source_x = source % maze_width
+    source_y = source // maze_width
+    goal_x = stop_node % maze_width
+    goal_y = stop_node // maze_width
+    return np.abs(source_x - goal_x) + np.abs(source_y - goal_y)
+
 def animate_agents(maze: np.ndarray):
     """Animate the agents moving through the maze. Maze should be a grayscale image."""
 
@@ -45,23 +53,53 @@ def animate_agents(maze: np.ndarray):
 
     try:
         # Define the agent's starting position
-        runner_pos = [1, 1]
+        bfs_runner_pos = [1, 1]
+        dijkstra_runner_pos = [313, 1]
+        a_star_runner_pos = [313, 313]
         center = (maze.shape[1] * maze.shape[0]) // 2
         
         # Define the adjacency list for the maze
         adj_list = build_adj_list(maze)
 
         # Instantiate the agents' search algorithms
-        runner_pathing = bfs(adj_list, runner_pos[0] + runner_pos[1] * maze.shape[1], center)
+        bfs_runner_pathing = bfs(adj_list, bfs_runner_pos[0] + bfs_runner_pos[1] * maze.shape[1], center)
+        dijkstra_runner_pathing = dijkstra(adj_list, dijkstra_runner_pos[0] + dijkstra_runner_pos[1] * maze.shape[1], center)
+
+        a_star_runner_pathing = a_star(adj_list, a_star_runner_pos[0] + a_star_runner_pos[1] * maze.shape[1], maze.shape[1],manhattan_distance ,center)
+
         
         # Run the search algorithms until they meet
-        while (center != runner_pos[0] + runner_pos[1] * maze.shape[1]):
-            try:
-                runner_search_pos = next(runner_pathing)
-                frame[runner_search_pos // len(maze), runner_search_pos % len(maze), 2] = 255
-            except StopIteration as e:
-                if runner_search_pos == center:
-                    break
+        bfs_found = False
+        dijkstra_found = False
+        a_star_found = False
+
+        while not (bfs_found and dijkstra_found and a_star_found ):
+            # BFS
+            if not bfs_found:
+                try:
+                    bfs_runner_search_pos = next(bfs_runner_pathing)
+                    frame[bfs_runner_search_pos // len(maze), bfs_runner_search_pos % len(maze), 2] = 255
+                except StopIteration as e:
+                    if bfs_runner_search_pos == center:
+                        bfs_found = True
+            
+            # Dijkstra's
+            if not dijkstra_found:
+                try:
+                    dijkstra_runner_search_pos = next(dijkstra_runner_pathing)
+                    frame[dijkstra_runner_search_pos // len(maze), dijkstra_runner_search_pos % len(maze), 0] = 255 
+                except StopIteration as e:
+                    if dijkstra_runner_search_pos == center:
+                        dijkstra_found = True
+            
+            # A_Star
+            if not a_star_found:
+                try:
+                    a_star_runner_search_pos = next(a_star_runner_pathing)
+                    frame[a_star_runner_search_pos // len(maze), a_star_runner_search_pos % len(maze), 1] = 255
+                except StopIteration as e:
+                    if a_star_runner_search_pos == center:
+                        a_star_found = True
 
             video_writer.write(frame)
     except Exception as e:
