@@ -41,46 +41,28 @@ def animate_agents(maze: np.ndarray):
     frame[:, :, 1] = maze
     frame[:, :, 2] = maze
     
-    video_writer = cv2.VideoWriter('generated/maze.avi', cv2.VideoWriter_fourcc(*'XVID'), 30, (frame.shape[1], frame.shape[0]))
+    video_writer = cv2.VideoWriter('generated/maze.avi', cv2.VideoWriter_fourcc(*'XVID'), 300, (frame.shape[1], frame.shape[0]))
 
     try:
         # Define the agent's starting position
-        runner_pos = np.random.randint(0, len(maze) // 2, size=(2,)) * 2 + 1
-        chaser_pos = np.random.randint(1, len(maze) // 2, size=(2,)) * 2 + 1
+        runner_pos = [1, 1]
+        center = (maze.shape[1] * maze.shape[0]) // 2
         
         # Define the adjacency list for the maze
         adj_list = build_adj_list(maze)
 
-        # Make readonly positions for the runner and chaser positions to prevent the search algorithms from modifying them
-        runner_pos_view = np.array(runner_pos[0] + runner_pos[1] * maze.shape[1])
-        chaser_pos_view = np.array(chaser_pos[0] + chaser_pos[1] * maze.shape[1])
-
         # Instantiate the agents' search algorithms
-        chaser_pathing = dijkstra(adj_list, chaser_pos[0] + chaser_pos[1] * maze.shape[1], runner_pos_view)
-        runner_pathing = bfs(adj_list, runner_pos[0] + runner_pos[1] * maze.shape[1], chaser_pos_view)
+        runner_pathing = bfs(adj_list, runner_pos[0] + runner_pos[1] * maze.shape[1], center)
         
         # Run the search algorithms until they meet
-        while any(chaser_pos != runner_pos):
+        while (center != runner_pos[0] + runner_pos[1] * maze.shape[1]):
             try:
-               chaser_search_pos = next(chaser_pathing)
-               frame[chaser_search_pos // len(maze), chaser_search_pos % len(maze), 0] = 255
+                runner_search_pos = next(runner_pathing)
+                frame[runner_search_pos // len(maze), runner_search_pos % len(maze), 2] = 255
             except StopIteration as e:
-                if np.array_equal(chaser_pos, runner_pos):
+                if runner_search_pos == center:
                     break
-                else:
-                    output_table = e.value
-                    chaser_pathing = dijkstra(adj_list, chaser_pos[0] + chaser_pos[1] * maze.shape[1], runner_pos_view)
-            
-            try:
-               runner_search_pos = next(runner_pathing)
-               frame[runner_search_pos // len(maze), runner_search_pos % len(maze), 2] = 255
-            except StopIteration as e:
-                if np.array_equal(runner_pos, chaser_pos):
-                    break
-                else:
-                    output_table = e.value
-                    runner_pathing = bfs(adj_list, runner_pos[0] + runner_pos[1] * maze.shape[1], chaser_pos_view)
-            
+
             video_writer.write(frame)
     except Exception as e:
         video_writer.release()
