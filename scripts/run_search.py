@@ -13,7 +13,7 @@ class VideoWriter:
         if output_args is None:
             output_args = {}
         input_args['framerate'] = fps
-        input_args['pix_fmt'] = 'rgb24'
+        input_args['pix_fmt'] = 'rgba'
         input_args['s'] = '{}x{}'.format(*shape)
         self.filepath = filepath
         self.shape = shape
@@ -78,10 +78,7 @@ def animate_agents(maze: np.ndarray):
     """Animate the agents moving through the maze. Maze should be a grayscale image."""
 
     # BGR image of the maze
-    frame = np.empty((maze.shape[0], maze.shape[1], 3), dtype=np.uint8)
-    frame[:, :, 0] = maze
-    frame[:, :, 1] = maze
-    frame[:, :, 2] = maze
+    frame = np.zeros((maze.shape[0], maze.shape[1], 4), dtype=np.uint8)
     
     # ffmpeg -i generated/video/maze_%02d.png -r 360 maze.mp4 to covert folder of pngs to video
     video_writer = VideoWriter('generated/maze.mp4', 360, (frame.shape[1], frame.shape[0]))
