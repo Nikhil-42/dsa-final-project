@@ -84,7 +84,7 @@ def animate_agents(maze: np.ndarray):
     frame[:, :, 2] = maze
     
     # ffmpeg -i generated/video/maze_%02d.png -r 360 maze.mp4 to covert folder of pngs to video
-    video_writer = VideoWriter('generated/maze.avi', 360, (frame.shape[1], frame.shape[0]))
+    video_writer = VideoWriter('generated/maze.mp4', 360, (frame.shape[1], frame.shape[0]))
 
     try:
         # Define the agent's starting position
