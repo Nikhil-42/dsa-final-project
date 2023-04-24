@@ -106,6 +106,8 @@ if __name__ == '__main__':
     YELLOW = (204, 204, 0)
     
     AVERAGE_RADIUS = 40
+
+    cv2.imwrite("generated/maze_gray.png", maze)
     
     maze = add_terrain(maze, AVERAGE_RADIUS, (GREEN, BLUE, YELLOW))
     
