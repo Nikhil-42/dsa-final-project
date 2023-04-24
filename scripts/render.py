@@ -42,8 +42,5 @@ class MyApp(ShowBase):
         self.initiateHeightMap("generated/maze_gray.png", 32, 10) # creates terrain
         self.importTexture("generated/maze.mp4", "REPLACE", 317/513) # imports video onto map
 
-        
-
-
 app = MyApp()
 app.run()
