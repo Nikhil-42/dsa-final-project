@@ -7,7 +7,11 @@ from searches import *
 import time
 
 class VideoWriter:
-    def __init__(self, filepath, fps, shape, input_args: dict = {}, output_args: dict = {}):
+    def __init__(self, filepath, fps, shape, input_args: dict = None, output_args: dict = None):
+        if input_args is None:
+            input_args = {}
+        if output_args is None:
+            output_args = {}
         input_args['framerate'] = fps
         input_args['pix_fmt'] = 'rgb24'
         input_args['s'] = '{}x{}'.format(*shape)
@@ -18,6 +22,7 @@ class VideoWriter:
         self.process = (
             ffmpeg
                 .input('pipe:', format='rawvideo', **input_args)
+                .filter('fps', fps=30, round='up')
                 .output(self.filepath, **output_args)
                 .overwrite_output()
                 .run_async(pipe_stdin=True)
@@ -83,8 +88,8 @@ def animate_agents(maze: np.ndarray):
 
     try:
         # Define the agent's starting position
-        last_y = maze.shape[0] - 1
-        last_x = maze.shape[1] - 1
+        last_y = maze.shape[0] - 2
+        last_x = maze.shape[1] - 2
         bfs_runner_pos = [1, 1]
         dijkstra_runner_pos = [last_x, last_y]
         a_star_runner_pos = [1, last_y]
@@ -97,7 +102,7 @@ def animate_agents(maze: np.ndarray):
         # Instantiate the agents' search algorithms
         bfs_runner_pathing = bfs(adj_list, bfs_runner_pos[0] + bfs_runner_pos[1] * maze.shape[1], center)
         dijkstra_runner_pathing = dijkstra(adj_list, dijkstra_runner_pos[0] + dijkstra_runner_pos[1] * maze.shape[1], center)
-        a_star_runner_pathing = a_star(adj_list, a_star_runner_pos[0] + a_star_runner_pos[1] * maze.shape[1],maze.shape[1], manhattan_distance ,center)
+        a_star_runner_pathing = a_star(adj_list, a_star_runner_pos[0] + a_star_runner_pos[1] * maze.shape[1], center, lambda node: manhattan_distance(node, center, maze.shape[1]))
         bellman_ford_pathing = bellman_ford(adj_list, bellman_ford_pos[0] + bellman_ford_pos[1] * maze.shape[1], center)
 
         
@@ -108,10 +113,10 @@ def animate_agents(maze: np.ndarray):
         bellman_ford_found = True 
 
         start_time = time.time()
-        bfs_time = 0
-        dijkstra_time = 0
-        a_star_time = 0
-        bellman_ford_time = 0
+        bfs_time = 0.0
+        dijkstra_time = 0.0
+        a_star_time = 0.0
+        bellman_ford_time = 0.0
         while not (bfs_found and dijkstra_found and a_star_found and bellman_ford_found):
             # BFS
             if not bfs_found:
