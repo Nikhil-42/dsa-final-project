@@ -51,7 +51,7 @@ def build_adj_list(maze: np.ndarray):
     
     # Conversion factor from pixel height delta. Maps [-256,256] to (0, inf)
     # Divide by 88.7228390619 = ln(floatmax) | 256 / 88.7228390619 = 2.88539
-    remap = lambda x: math.exp(x/2.85)
+    remap = lambda x: x if x != 255 else np.inf
     
     adj_list = (np.empty((maze.shape[0] * maze.shape[1], 4), dtype=np.float32), np.empty((maze.shape[0] * maze.shape[1], 4), dtype=np.int32))
     
@@ -62,7 +62,7 @@ def build_adj_list(maze: np.ndarray):
         neighbors = neighbor_deltas + np.array((x, y))
 
         adj_list[1][i] = np.array([nx + ny * maze.shape[1] for nx, ny in neighbors])
-        adj_list[0][i] = np.array([remap(maze[ny, nx] - maze[y, x]) if in_range(nx, ny) else np.inf for nx, ny in neighbors])
+        adj_list[0][i] = np.array([0.5 * remap(maze[ny, nx]) + 0.5 * remap(maze[y, x]) if in_range(nx, ny) else np.inf for nx, ny in neighbors])
     
     return adj_list
 
@@ -109,8 +109,8 @@ def animate_agents(maze: np.ndarray):
         # Run the search algorithms until they meet
         bfs_found = False
         dijkstra_found = False
-        a_star_found = True 
-        bellman_ford_found = True 
+        a_star_found = False
+        bellman_ford_found = True
 
         start_time = time.time()
         bfs_time = 0.0
