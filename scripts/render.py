@@ -6,27 +6,41 @@ from direct.showbase.Loader import Loader
 from direct.showbase import DirectObject
 
 
+    
 class MyApp(ShowBase):
+
+    # imports a texture with specified mode ("ADD" or "REPLACE" or "DECAL"))
+    def importTexture(self, path:str, mode:str, scale:float):
+        terrain_texture = loader.loadTexture(path)
+        terrain_texture_stage = TextureStage("terrain_texture_stage")
+
+        # checks which mode user used
+        if mode == "REPLACE":
+            terrain_texture_stage.setMode(TextureStage.MReplace)
+        elif mode == "ADD":
+            terrain_texture_stage.setMode(TextureStage.MAdd)
+        elif mode == "DECAL":
+            terrain_texture_stage.setMode(TextureStage.MDecal)
+            
+        self.terrain.getRoot().setTexture(terrain_texture_stage, terrain_texture)
+        self.terrain.getRoot().setTexScale(terrain_texture_stage, scale, scale)
+
+    # initiates the height map with specified image
+    def initiateHeightMap(self, path:str, block_size: int, vertical_size: int):
+        self.terrain = GeoMipTerrain("Maze")
+        self.terrain.setBlockSize(block_size)
+        self.terrain.getRoot().setSz(vertical_size) # vertical size
+        self.terrain.setHeightfield(path)
+        self.terrain.setBruteforce(True) # non-dynamic maze
+        self.terrain.getRoot().reparentTo(render)
+        self.terrain.generate()
+
+
     def __init__(self):
         ShowBase.__init__(self)
-
-        # uses a height map to generate the terrain from a b/w image
-        terrain = GeoMipTerrain("Maze")
-        terrain.setBlockSize(32)
-        terrain.getRoot().setSz(10) # vertical size
-        terrain.setHeightfield("generated/maze_gray.png")
-        terrain.setBruteforce(True) # non-dynamic maze
-        terrain.getRoot().reparentTo(render)
-        terrain.generate()
-
-        # loads colored terrain into a texture
-        video_texture = loader.loadTexture("generated/maze.mp4")
-        video_texture_stage = TextureStage("video_texture_stage")
-        video_texture_stage.setMode(TextureStage.MReplace)
-
-        # sets the colored terrain to the map
-        terrain.getRoot().setTexture(video_texture_stage, video_texture)
-        terrain.getRoot().setTexScale(video_texture_stage, 317/513, 317/513)
+        self.terrain = None # initializes terrain to none
+        self.initiateHeightMap("generated/maze_gray.png", 32, 10) # creates terrain
+        self.importTexture("generated/maze.mp4", "REPLACE", 317/513) # imports video onto map
 
         
 
