@@ -215,6 +215,7 @@ def animate_agents(maze: np.ndarray, a_star_pos: tuple, bfs_pos: tuple, dijkstra
         raise e
     return times
 
+# merges all of our four rotations into one
 def merge():
     input_files = ['generated/maze0.mpg', 'generated/maze1.mpg', 'generated/maze2.mpg', 'generated/maze3.mpg']
     output_file = 'generated/maze.mpg'
