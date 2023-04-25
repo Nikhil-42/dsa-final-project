@@ -48,10 +48,18 @@ class MyApp(ShowBase):
         props = WindowProperties() 
         props.setSize(1280, 720) 
 
-        self.addText("A*", (-1.7, 0, .55), (0, 255, 0, 1))
-        self.addText("Bellman Ford", (-1.7, 0, .75), (255, 0, 255, 1))
-        self.addText("Breadth First Search", (-1.7, 0, .65), (255, 0, 0, 1))
-        self.addText("Dijkstra's", (-1.7, 0, .85), (0, 0, 255, 1))
+        left, right, top, bottom = -1.7, -.3, .95, .5
+
+        cm = CardMaker('card')
+        cm.setColor(105, 105, 105, 255)
+        cm.setFrame(left, right, top, bottom)
+        card = render2d.attachNewNode(cm.generate())
+
+
+        self.addText("A*: ", (-1.7, 0, .55), (0, 255, 0, 1))
+        self.addText("Bellman Ford: ", (-1.7, 0, .75), (255, 0, 255, 1))
+        self.addText("Breadth First Search: ", (-1.7, 0, .65), (255, 0, 0, 1))
+        self.addText("Dijkstra's: ", (-1.7, 0, .85), (0, 0, 255, 1))
 
         
 
