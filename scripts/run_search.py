@@ -81,6 +81,7 @@ def search(start_idx, end_idx, pathing, paths: np.ndarray, color):
     SEARCHING, BACKTRACKING, WALKING, DONE = range(4)
     WIDTH = paths.shape[1]
     time_taken = 0.0
+    path_length = 0.0
     status = SEARCHING    
     while not status == DONE:
         if status == SEARCHING:
@@ -95,6 +96,7 @@ def search(start_idx, end_idx, pathing, paths: np.ndarray, color):
                 status = BACKTRACKING if search_idx == end_idx else DONE
                 if status == BACKTRACKING:
                     output_table = e.value
+                    path_length = output_table[0][end_idx]
                     backtrack = solve_path(output_table[1], start_idx, end_idx)
         elif status == BACKTRACKING:
             try:
@@ -104,7 +106,7 @@ def search(start_idx, end_idx, pathing, paths: np.ndarray, color):
                 yield next_node_pos
             except StopIteration as e:
                 status = DONE
-    return time_taken
+    return time_taken, path_length 
 
 
 def solve_path(backlink_table: np.ndarray, start_node: int, stop_node: int):
@@ -115,7 +117,6 @@ def solve_path(backlink_table: np.ndarray, start_node: int, stop_node: int):
     for node in path[::-1]:
         yield node
 
-
 # this is for our A* algorithm
 def manhattan_distance(source, stop_node, maze_width):
     source_x = source % maze_width
@@ -124,8 +125,7 @@ def manhattan_distance(source, stop_node, maze_width):
     goal_y = stop_node // maze_width
     return np.abs(source_x - goal_x) + np.abs(source_y - goal_y)
 
-
-def animate_agents(maze: np.ndarray, a_star_pos: tuple, bfs_pos: tuple, dijkstra_pos: tuple, dfs_pos: tuple, rotation: str, times: dict):
+def animate_agents(maze: np.ndarray, a_star_pos: tuple, bfs_pos: tuple, dijkstra_pos: tuple, dfs_pos: tuple, rotation: str, times: dict, path_lengths: dict):
     """Animate the agents moving through the maze. Maze should be a grayscale image."""
     HEIGHT, WIDTH = maze.shape[:2]
 
@@ -164,7 +164,6 @@ def animate_agents(maze: np.ndarray, a_star_pos: tuple, bfs_pos: tuple, dijkstra
     dijkstra_done = False
     a_star_done = False
     dfs_done = False 
-
     
     try:        
         # Run the search algorithms until they meet in the middle
@@ -176,8 +175,9 @@ def animate_agents(maze: np.ndarray, a_star_pos: tuple, bfs_pos: tuple, dijkstra
                     background[next_pos[::-1]] = paths[next_pos[::-1]]
                 except StopIteration as e:
                     bfs_done = True
-                    times["BFS"] += (e.value / 4.0)
-                    print(f"BFS took {e.value} seconds")
+                    times["BFS"] += (e.value[0] / 4.0)
+                    path_lengths["BFS"] += e.value[1]
+                    print(f"BFS took {e.value[0]} seconds")
             
             # Dijkstra's
             if not dijkstra_done:
@@ -186,8 +186,9 @@ def animate_agents(maze: np.ndarray, a_star_pos: tuple, bfs_pos: tuple, dijkstra
                     background[next_pos[::-1]] = paths[next_pos[::-1]]
                 except StopIteration as e:
                     dijkstra_done = True
-                    times["Dijkstra's"] += (e.value / 4.0)
-                    print(f"Dijkstra's took {e.value} seconds")
+                    times["Dijkstra's"] += (e.value[0] / 4.0)
+                    path_lengths["Dijkstra's"] += e.value[1]
+                    print(f"Dijkstra's took {e.value[0]} seconds")
                 
             # A*
             if not a_star_done:
@@ -196,8 +197,9 @@ def animate_agents(maze: np.ndarray, a_star_pos: tuple, bfs_pos: tuple, dijkstra
                     background[next_pos[::-1]] = paths[next_pos[::-1]]
                 except StopIteration as e:
                     a_star_done = True
-                    times["A*"] += (e.value / 4.0)
-                    print(f"A* took {e.value} seconds")
+                    times["A*"] += (e.value[0] / 4.0)
+                    path_lengths["A*"] += e.value[1]
+                    print(f"A* took {e.value[0]} seconds")
             
             # Bellman Ford
             if not dfs_done:
@@ -206,8 +208,9 @@ def animate_agents(maze: np.ndarray, a_star_pos: tuple, bfs_pos: tuple, dijkstra
                     background[next_pos[::-1]] = paths[next_pos[::-1]]
                 except StopIteration as e:
                     dfs_done = True
-                    times["DFS"] += (e.value / 4.0)
-                    print(f"DFS took {e.value} seconds")
+                    times["DFS"] += (e.value[0] / 4.0)
+                    path_lengths["DFS"] += e.value[1]
+                    print(f"DFS took {e.value[0]} seconds")
 
             video_writer.write(background)
     except Exception as e:
@@ -221,6 +224,14 @@ def merge():
     output_file = 'generated/maze.mpg'
     command = ['ffmpeg', '-i', 'concat:' + '|'.join(input_files), '-c', 'copy', output_file]
     subprocess.run(command, check=True)
+
+def writeDict(d, name):
+    # outputs the times as a csv
+    with open('generated/' + name + '.csv', mode = 'w', newline='') as file:
+        writer = csv.writer(file)
+        for key, value in d.items():
+            writer.writerow([key,value])
+    
 
 if __name__ == '__main__':
 
@@ -236,16 +247,14 @@ if __name__ == '__main__':
         "A*": 0.0,
         "DFS": 0.0,
     }
+    path_lengths = times.copy()
 
-    animate_agents(maze, (1, 1), (last_x, 1), (1, last_y), (last_x, last_y), "0", times) # first rotation
-    animate_agents(maze, (1, last_y), (1, 1), (last_x, last_y), (last_x, 1), "1", times) # second rotation
-    animate_agents(maze, (last_x, last_y), (1, last_y), (last_x, 1), (1, 1), "2", times) # third rotation
-    animate_agents(maze, (last_x, 1), (last_x, last_y), (1, 1), (1, last_y), "3", times) # fourth rotation
+    animate_agents(maze, (1, 1), (last_x, 1), (1, last_y), (last_x, last_y), "0", times, path_lengths) # first rotation
+    animate_agents(maze, (1, last_y), (1, 1), (last_x, last_y), (last_x, 1), "1", times, path_lengths) # second rotation
+    animate_agents(maze, (last_x, last_y), (1, last_y), (last_x, 1), (1, 1), "2", times, path_lengths) # third rotation
+    animate_agents(maze, (last_x, 1), (last_x, last_y), (1, 1), (1, last_y), "3", times, path_lengths) # fourth rotation
 
-    merge()
+    merge() # puts all four rotations into one video
+    writeDict(times, "times") # writes the dictionary of times to a csv
+    writeDict(path_lengths, "path_lengths") # writes the dictionary of path lengths to a csv
 
-    # outputs the times as a csv
-    with open('generated/times.csv', mode = 'w', newline='') as file:
-        writer = csv.writer(file)
-        for key, value in times.items():
-            writer.writerow([key,value])
