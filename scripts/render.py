@@ -21,7 +21,7 @@ class MyApp(ShowBase):
         q_button = keyboard_map.get_mapped_button("q")
         e_button = keyboard_map.get_mapped_button("e")
         
-        SPEED = 50
+        SPEED = 200
         def move_camera(direction):
             self.camera.setPos(self.camera.getPos() + render.getRelativeVector(camera, tuple(np.array(direction) * SPEED * globalClock.getDt())))
         
@@ -91,7 +91,6 @@ class MyApp(ShowBase):
         
         # set relative mode and hide the cursor
         props.setCursorHidden(True)
-        props.setMouseMode(WindowProperties.M_relative)
         # sets window size
         props.setSize(1280, 720)
         
