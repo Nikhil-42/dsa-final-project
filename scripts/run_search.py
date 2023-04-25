@@ -145,7 +145,7 @@ def animate_agents(maze: np.ndarray):
     bfs_runner_pos = [1, 1]
     dijkstra_runner_pos = [last_x, last_y]
     a_star_runner_pos = [1, last_y]
-    bellman_ford_runner_pos = [last_x, last_y]
+    dfs_runner_pos = [last_x, last_y]
     
     center_idx = (maze.shape[1] * maze.shape[0]) // 2
 
@@ -153,22 +153,22 @@ def animate_agents(maze: np.ndarray):
     bfs_runner_pathing = bfs(adj_list, pos_to_idx(bfs_runner_pos, WIDTH), center_idx)
     dijkstra_runner_pathing = dijkstra(adj_list, pos_to_idx(dijkstra_runner_pos, WIDTH), center_idx)
     a_star_runner_pathing = a_star(adj_list, pos_to_idx(a_star_runner_pos, WIDTH), center_idx, lambda node: manhattan_distance(node, center_idx, maze.shape[1]))
-    bellman_ford_pathing = bellman_ford(adj_list, pos_to_idx(bellman_ford_runner_pos, WIDTH), center_idx)
+    dfs_pathing = dfs(adj_list, pos_to_idx(dfs_runner_pos, WIDTH), center_idx)
     
     # Instantiate the agents' search runners
     bfs_search = search(pos_to_idx(bfs_runner_pos, WIDTH), center_idx, bfs_runner_pathing, paths, np.array([255, 0, 0], dtype=np.uint8))
     dijkstra_search = search(pos_to_idx(dijkstra_runner_pos, WIDTH), center_idx, dijkstra_runner_pathing, paths, np.array([0, 255, 0], dtype=np.uint8))
     a_star_search = search(pos_to_idx(a_star_runner_pos, WIDTH), center_idx, a_star_runner_pathing, paths, np.array([0, 0, 255], dtype=np.uint8))
-    bellman_ford_search = search(pos_to_idx(bellman_ford_runner_pos, WIDTH), center_idx, bellman_ford_pathing, paths, np.array([255, 255, 0], dtype=np.uint8))
+    dfs_search = search(pos_to_idx(dfs_runner_pos, WIDTH), center_idx, dfs_pathing, paths, np.array([255, 255, 0], dtype=np.uint8))
     
     bfs_done = False
     dijkstra_done = False
     a_star_done = False
-    bellman_ford_done = True
+    dfs_done = True
     
     try:        
         # Run the search algorithms until they meet in the middle
-        while not (bfs_done and dijkstra_done and a_star_done and bellman_ford_done):
+        while not (bfs_done and dijkstra_done and a_star_done and dfs_done):
             # BFS
             if not bfs_done:
                 try:
@@ -197,12 +197,12 @@ def animate_agents(maze: np.ndarray):
                     print(f"A* took {e.value} seconds")
             
             # Bellman Ford
-            if not bellman_ford_done:
+            if not dfs_done:
                 try:
-                    next_pos = next(bellman_ford_search)
+                    next_pos = next(dfs_search)
                     background[next_pos[::-1]] = paths[next_pos[::-1]]
                 except StopIteration as e:
-                    bellman_ford_done = True
+                    dfs_done = True
                     print(f"Bellman Ford took {e.value} seconds")
 
             video_writer.write(background)
