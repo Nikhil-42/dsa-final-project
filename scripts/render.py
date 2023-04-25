@@ -97,24 +97,25 @@ class MyApp(ShowBase):
         self.setupCameraControls(props)
         
         self.win.requestProperties(props)
+        
+        times = {}
+        with open('generated/times.csv') as f:
+            for line in f:
+                key, val= line.split(",")
+                times[key] = float(val)
+                times[key] *= 1000  # converts to milliseconds
+                times[key] = round(times[key], 4)  # rounds to 2 decimal places
 
-        # coords for the card
-        left, right, top, bottom = -1.7, -.3, .95, .5
 
-        # making the card
-        cm = CardMaker('card')
-        cm.setColor(105, 105, 105, 255)
-        cm.setFrame(left, right, top, bottom)
-        card = render2d.attachNewNode(cm.generate())
-
-        self.addText("A*: ", (-1.7, 0, .55), (0, 255, 0, 1))
-        self.addText("Bellman Ford: ", (-1.7, 0, .75), (255, 0, 255, 1))
-        self.addText("Breadth First Search: ", (-1.7, 0, .65), (255, 0, 0, 1))
-        self.addText("Dijkstra's: ", (-1.7, 0, .85), (0, 0, 255, 1))
+        # Adding text
+        self.addText("A*: " + str(times["A*"]) + " ms", (-1.7, 0, .55), (0, 255, 0, 1))
+        self.addText("Depth First Search: " + str(times["DFS"]) + " ms", (-1.7, 0, .75), (255, 0, 255, 1))
+        self.addText("Breadth First Search: "+ str(times["BFS"]) + " ms", (-1.7, 0, .65), (255, 0, 0, 1))
+        self.addText("Dijkstra's: " + str(times["Dijkstra's"]) + " ms", (-1.7, 0, .85), (0, 0, 255, 1))
 
         self.terrain = None  # initializes terrain to none
         self.initiateHeightMap("generated/maze_gray.png", 32, 20)  # creates terrain
-        self.importTexture("generated/maze.mp4", "REPLACE", 317/513)  # imports video onto map
+        self.importTexture("generated/maze.mpg", "REPLACE", 317/513)  # imports video onto map
 
 
 app = MyApp()
