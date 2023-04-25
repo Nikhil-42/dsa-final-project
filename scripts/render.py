@@ -1,9 +1,5 @@
 from direct.showbase.ShowBase import ShowBase
-from panda3d.core import GeoMipTerrain, DirectionalLight
 from panda3d.core import *
-from direct.showbase.ShowBase import ShowBase
-from direct.showbase.Loader import Loader
-from direct.showbase import DirectObject
 
 
     
@@ -34,12 +30,35 @@ class MyApp(ShowBase):
         self.terrain.setBruteforce(True) # non-dynamic maze
         self.terrain.getRoot().reparentTo(render)
         self.terrain.generate()
+    
+    def addText(self, text_str:str, coords: tuple, color:tuple):
+        text = TextNode('node name')
+        text.setText(text_str)
+        text.setTextColor(color)
+        textNodePath = aspect2d.attachNewNode(text)
+        textNodePath.setScale(0.07)
+        textNodePath.setPos(coords)
+        cmr12 = loader.loadFont('cmr12.egg')
+        text.setFont(cmr12)
 
 
     def __init__(self):
         ShowBase.__init__(self)
+        # sets window size
+        props = WindowProperties() 
+        props.setSize(1280, 720) 
+
+        self.addText("A*", (-1.7, 0, .55), (0, 255, 0, 1))
+        self.addText("Bellman Ford", (-1.7, 0, .75), (255, 0, 255, 1))
+        self.addText("Breadth First Search", (-1.7, 0, .65), (255, 0, 0, 1))
+        self.addText("Dijkstra's", (-1.7, 0, .85), (0, 0, 255, 1))
+
+        
+
+
+        self.win.requestProperties(props) 
         self.terrain = None # initializes terrain to none
-        self.initiateHeightMap("generated/maze_gray.png", 32, 10) # creates terrain
+        self.initiateHeightMap("generated/maze_gray.png", 32, 20) # creates terrain
         self.importTexture("generated/maze.mp4", "REPLACE", 317/513) # imports video onto map
 
 app = MyApp()
