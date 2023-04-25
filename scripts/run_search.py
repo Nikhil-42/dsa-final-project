@@ -1,11 +1,10 @@
-from enum import Enum
 import cv2
-import math
 import numba
 import ffmpeg
 import numpy as np
 from searches import *
 import time
+
 
 class VideoWriter:
     def __init__(self, filepath, fps, shape, input_args: dict = None, output_args: dict = None):
@@ -68,6 +67,44 @@ def build_adj_list(maze: np.ndarray):
     return adj_list
 
 
+def idx_to_pos(index, maze_width):
+    return index % maze_width, index // maze_width
+
+def pos_to_idx(pos, maze_width):
+    return pos[0] + pos[1] * maze_width 
+
+
+def search(start_idx, end_idx, pathing, paths: np.ndarray, color):
+    """Search for a path from start_pos to end_pos using pathing."""   
+    SEARCHING, BACKTRACKING, WALKING, DONE = range(4)
+    WIDTH = paths.shape[1]
+    time_taken = 0.0
+    status = SEARCHING    
+    while not status == DONE:
+        if status == SEARCHING:
+            try:
+                start_time = time.time()
+                search_idx = next(pathing)
+                time_taken += time.time() - start_time
+                search_pos = idx_to_pos(search_idx, WIDTH)
+                paths[search_pos[::-1]] += color
+                yield search_pos
+            except StopIteration as e:
+                status = BACKTRACKING if search_idx == end_idx else DONE
+                if status == BACKTRACKING:
+                    output_table = e.value
+                    backtrack = solve_path(output_table[1], start_idx, end_idx)
+        elif status == BACKTRACKING:
+            try:
+                next_node = next(backtrack)
+                next_node_pos = idx_to_pos(next_node, WIDTH)
+                paths[next_node_pos[::-1]] -= color
+                yield next_node_pos
+            except StopIteration as e:
+                status = DONE
+    return time_taken
+
+
 def solve_path(backlink_table: np.ndarray, start_node: int, stop_node: int):
     """Solve the path from the distance table."""
     path = [stop_node]
@@ -75,6 +112,7 @@ def solve_path(backlink_table: np.ndarray, start_node: int, stop_node: int):
         path.append(backlink_table[path[-1]])
     for node in path[::-1]:
         yield node
+
 
 # this is for our A* algorithm
 def manhattan_distance(source, stop_node, maze_width):
@@ -84,150 +122,94 @@ def manhattan_distance(source, stop_node, maze_width):
     goal_y = stop_node // maze_width
     return np.abs(source_x - goal_x) + np.abs(source_y - goal_y)
 
+
 def animate_agents(maze: np.ndarray):
     """Animate the agents moving through the maze. Maze should be a grayscale image."""
+    HEIGHT, WIDTH = maze.shape[:2]
 
     # BGR image of the maze
     background = maze
-    paths = np.zeros_like(maze)
+    paths = np.zeros_like(maze, dtype=np.uint8)
     maze = cv2.cvtColor(maze, cv2.COLOR_BGR2GRAY)
     
     # ffmpeg -i generated/video/maze_%02d.png -r 360 maze.mp4 to covert folder of pngs to video
     video_writer = VideoWriter('generated/maze.mp4', 360, (paths.shape[1], paths.shape[0]))
 
-    try:
-        # Define the agent's starting position
-        last_y = maze.shape[0] - 2
-        last_x = maze.shape[1] - 2
-        bfs_runner_pos = [1, 1]
-        dijkstra_runner_pos = [last_x, last_y]
-        a_star_runner_pos = [1, last_y]
-        bellman_ford_pos = [last_x, last_y]
-        center = (maze.shape[1] * maze.shape[0]) // 2
-        
-        # Define the adjacency list for the maze
-        adj_list = build_adj_list(maze)
+    # Define the adjacency list for the maze
+    adj_list = build_adj_list(maze)
+    
+    # Define the agent's starting position
+    last_y = maze.shape[0] - 2
+    last_x = maze.shape[1] - 2
+    
+    bfs_runner_pos = [1, 1]
+    dijkstra_runner_pos = [last_x, last_y]
+    a_star_runner_pos = [1, last_y]
+    bellman_ford_runner_pos = [last_x, last_y]
+    
+    center_idx = (maze.shape[1] * maze.shape[0]) // 2
 
-        # Instantiate the agents' search algorithms
-        bfs_runner_pathing = bfs(adj_list, bfs_runner_pos[0] + bfs_runner_pos[1] * maze.shape[1], center)
-        dijkstra_runner_pathing = dijkstra(adj_list, dijkstra_runner_pos[0] + dijkstra_runner_pos[1] * maze.shape[1], center)
-        a_star_runner_pathing = a_star(adj_list, a_star_runner_pos[0] + a_star_runner_pos[1] * maze.shape[1], center, lambda node: manhattan_distance(node, center, maze.shape[1]))
-        bellman_ford_pathing = bellman_ford(adj_list, bellman_ford_pos[0] + bellman_ford_pos[1] * maze.shape[1], center)
-
-        
-        # Run the search algorithms until they meet
-        SEARCHING, BACKTRACKING, WALKING, DONE = 0, 1, 2, 3
-        bfs_status = SEARCHING
-        dijkstra_status = SEARCHING
-        a_star_status = SEARCHING
-        bellman_ford_status = DONE 
-
-        bfs_time = 0.0
-        dijkstra_time = 0.0
-        a_star_time = 0.0
-        bellman_ford_time = 0.0
-        while not (bfs_status == DONE and dijkstra_status == DONE and a_star_status == DONE and bellman_ford_status == DONE):
+    # Instantiate the agents' search algorithms
+    bfs_runner_pathing = bfs(adj_list, pos_to_idx(bfs_runner_pos, WIDTH), center_idx)
+    dijkstra_runner_pathing = dijkstra(adj_list, pos_to_idx(dijkstra_runner_pos, WIDTH), center_idx)
+    a_star_runner_pathing = a_star(adj_list, pos_to_idx(a_star_runner_pos, WIDTH), center_idx, lambda node: manhattan_distance(node, center_idx, maze.shape[1]))
+    bellman_ford_pathing = bellman_ford(adj_list, pos_to_idx(bellman_ford_runner_pos, WIDTH), center_idx)
+    
+    # Instantiate the agents' search runners
+    bfs_search = search(pos_to_idx(bfs_runner_pos, WIDTH), center_idx, bfs_runner_pathing, paths, np.array([255, 0, 0], dtype=np.uint8))
+    dijkstra_search = search(pos_to_idx(dijkstra_runner_pos, WIDTH), center_idx, dijkstra_runner_pathing, paths, np.array([0, 255, 0], dtype=np.uint8))
+    a_star_search = search(pos_to_idx(a_star_runner_pos, WIDTH), center_idx, a_star_runner_pathing, paths, np.array([0, 0, 255], dtype=np.uint8))
+    bellman_ford_search = search(pos_to_idx(bellman_ford_runner_pos, WIDTH), center_idx, bellman_ford_pathing, paths, np.array([255, 255, 0], dtype=np.uint8))
+    
+    bfs_done = False
+    dijkstra_done = False
+    a_star_done = False
+    bellman_ford_done = True
+    
+    try:        
+        # Run the search algorithms until they meet in the middle
+        while not (bfs_done and dijkstra_done and a_star_done and bellman_ford_done):
             # BFS
-            if bfs_status == SEARCHING:
+            if not bfs_done:
                 try:
-                    start_time = time.time()
-                    bfs_runner_search_pos = next(bfs_runner_pathing)
-                    bfs_time += time.time() - start_time
-                    paths[bfs_runner_search_pos // len(maze), bfs_runner_search_pos % len(maze), 2] = 255
-                    background[bfs_runner_search_pos // len(maze), bfs_runner_search_pos % len(maze)] = paths[bfs_runner_search_pos // len(maze), bfs_runner_search_pos % len(maze)]
+                    next_pos = next(bfs_search)
+                    background[next_pos[::-1]] = paths[next_pos[::-1]]
                 except StopIteration as e:
-                    bfs_status = BACKTRACKING if bfs_runner_search_pos == center else DONE
-                    if bfs_status == BACKTRACKING:
-                        bfs_output_table = e.value
-                        bfs_bacttrack = solve_path(bfs_output_table[1], bfs_runner_pos[0] + bfs_runner_pos[1] * maze.shape[1], center)
-                        print('BFS found in {} seconds'.format(bfs_time))
-            elif bfs_status == BACKTRACKING:
-                try:
-                    next_node = next(bfs_bacttrack)
-                    paths[next_node // maze.shape[1], next_node % maze.shape[1], :] = 0
-                    background[next_node // maze.shape[1], next_node % maze.shape[1]] = paths[next_node // maze.shape[1], next_node % maze.shape[1]]
-                except StopIteration as e:
-                    bfs_status = DONE
+                    bfs_done = True
+                    print(f"BFS took {e.value} seconds")
             
-                
             # Dijkstra's
-            if dijkstra_status == SEARCHING:
+            if not dijkstra_done:
                 try:
-                    start_time = time.time()
-                    dijkstra_runner_search_pos = next(dijkstra_runner_pathing)
-                    dijkstra_time += time.time() - start_time
-                    paths[dijkstra_runner_search_pos // len(maze), dijkstra_runner_search_pos % len(maze), 0] = 255 
-                    background[dijkstra_runner_search_pos // len(maze), dijkstra_runner_search_pos % len(maze)] = paths[dijkstra_runner_search_pos // len(maze), dijkstra_runner_search_pos % len(maze)]
+                    next_pos = next(dijkstra_search)
+                    background[next_pos[::-1]] = paths[next_pos[::-1]]
                 except StopIteration as e:
-                    dijkstra_status = BACKTRACKING if dijkstra_runner_search_pos == center else DONE
-                    if dijkstra_status == BACKTRACKING:
-                        dijkstra_output_table = e.value
-                        dijkstra_bacttrack = solve_path(dijkstra_output_table[1], dijkstra_runner_pos[0] + dijkstra_runner_pos[1] * maze.shape[1], center)
-                        print('dijkstra found in {} seconds'.format(dijkstra_time))
-            elif dijkstra_status == BACKTRACKING:
+                    dijkstra_done = True
+                    print(f"Dijkstra's took {e.value} seconds")
+                
+            # A*
+            if not a_star_done:
                 try:
-                    next_node = next(dijkstra_bacttrack)
-                    paths[next_node // maze.shape[1], next_node % maze.shape[1], :] = 0
-                    background[next_node // maze.shape[1], next_node % maze.shape[1]] = paths[next_node // maze.shape[1], next_node % maze.shape[1]]
+                    next_pos = next(a_star_search)
+                    background[next_pos[::-1]] = paths[next_pos[::-1]]
                 except StopIteration as e:
-                    dijkstra_status = DONE
-            
-            # A_Star
-            if a_star_status == SEARCHING:
-                try:
-                    start_time = time.time()
-                    a_star_runner_search_pos = next(a_star_runner_pathing)
-                    a_star_time += time.time() - start_time
-                    paths[a_star_runner_search_pos // len(maze), a_star_runner_search_pos % len(maze), 1] = 255
-                    background[a_star_runner_search_pos // len(maze), a_star_runner_search_pos % len(maze)] = paths[a_star_runner_search_pos // len(maze), a_star_runner_search_pos % len(maze)]
-                except StopIteration as e:
-                    a_star_status = BACKTRACKING if a_star_runner_search_pos == center else DONE
-                    if a_star_status == BACKTRACKING:
-                        a_star_output_table = e.value
-                        a_star_bacttrack = solve_path(a_star_output_table[1], a_star_runner_pos[0] + a_star_runner_pos[1] * maze.shape[1], center)
-                        print('a_star found in {} seconds'.format(a_star_time))
-            elif a_star_status == BACKTRACKING:
-                try:
-                    next_node = next(a_star_bacttrack)
-                    paths[next_node // maze.shape[1], next_node % maze.shape[1], :] = 0
-                    background[next_node // maze.shape[1], next_node % maze.shape[1]] = paths[next_node // maze.shape[1], next_node % maze.shape[1]]
-                except StopIteration as e:
-                    a_star_status = DONE
+                    a_star_done = True
+                    print(f"A* took {e.value} seconds")
             
             # Bellman Ford
-            if bellman_ford_status == SEARCHING:
+            if not bellman_ford_done:
                 try:
-                    start_time = time.time()
-                    bellman_ford_runner_search_pos = next(bellman_ford_pathing)
-                    bellman_ford_time += time.time() - start_time
-                    paths[bellman_ford_runner_search_pos // len(maze), bellman_ford_runner_search_pos % len(maze), 1] = 255
-                    background[bellman_ford_runner_search_pos // len(maze), bellman_ford_runner_search_pos % len(maze)] = paths[bellman_ford_runner_search_pos // len(maze), bellman_ford_runner_search_pos % len(maze)]
+                    next_pos = next(bellman_ford_search)
+                    background[next_pos[::-1]] = paths[next_pos[::-1]]
                 except StopIteration as e:
-                    bellman_ford_status = BACKTRACKING if bellman_ford_runner_search_pos == center else DONE
-                    bellman_ford_output_table = e.value
-                    bellman_ford_bacttrack = solve_path(bellman_ford_output_table[1], bellman_ford_runner_pos[0] + bellman_ford_runner_pos[1] * maze.shape[1], center)
-                    print('bellman_ford found in {} seconds'.format(bellman_ford_time))
-            elif bellman_ford_status == BACKTRACKING:
-                try:
-                    next_node = next(bellman_ford_bacttrack)
-                    paths[next_node // maze.shape[1], next_node % maze.shape[1], :] = 0
-                    background[next_node // maze.shape[1], next_node % maze.shape[1]] = paths[next_node // maze.shape[1], next_node % maze.shape[1]]
-                except StopIteration as e:
-                    bellman_ford_status = DONE
+                    bellman_ford_done = True
+                    print(f"Bellman Ford took {e.value} seconds")
 
             video_writer.write(background)
     except Exception as e:
         video_writer.release()
         raise e
-    finally:
-        time.sleep(1)
-        print()
-        print("BFS time: ", bfs_time)
-        print("Dijkstra time: ", dijkstra_time)
-        print("A* time: ", a_star_time)
-        print("Bellman Ford time: ", bellman_ford_time)
         
-
 
 if __name__ == '__main__':
     maze = cv2.imread("generated/maze.png")
