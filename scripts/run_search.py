@@ -165,6 +165,13 @@ def animate_agents(maze: np.ndarray):
     dijkstra_done = False
     a_star_done = False
     dfs_done = True
+
+    times = {
+        "BFS": 0.0,
+        "Dijkstra's": 0.0,
+        "A*": 0.0,
+        "DFS": 0.0,
+    }
     
     try:        
         # Run the search algorithms until they meet in the middle
@@ -176,6 +183,7 @@ def animate_agents(maze: np.ndarray):
                     background[next_pos[::-1]] = paths[next_pos[::-1]]
                 except StopIteration as e:
                     bfs_done = True
+                    time["BFS:"] = e.value
                     print(f"BFS took {e.value} seconds")
             
             # Dijkstra's
@@ -185,6 +193,7 @@ def animate_agents(maze: np.ndarray):
                     background[next_pos[::-1]] = paths[next_pos[::-1]]
                 except StopIteration as e:
                     dijkstra_done = True
+                    times["Dijkstra's"] = e.value
                     print(f"Dijkstra's took {e.value} seconds")
                 
             # A*
@@ -194,6 +203,7 @@ def animate_agents(maze: np.ndarray):
                     background[next_pos[::-1]] = paths[next_pos[::-1]]
                 except StopIteration as e:
                     a_star_done = True
+                    times["A*"] = e.value
                     print(f"A* took {e.value} seconds")
             
             # Bellman Ford
@@ -203,12 +213,14 @@ def animate_agents(maze: np.ndarray):
                     background[next_pos[::-1]] = paths[next_pos[::-1]]
                 except StopIteration as e:
                     dfs_done = True
+                    times["DFS"] = e.value
                     print(f"Bellman Ford took {e.value} seconds")
 
             video_writer.write(background)
     except Exception as e:
         video_writer.release()
         raise e
+    return times
         
 
 if __name__ == '__main__':

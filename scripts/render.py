@@ -108,7 +108,7 @@ class MyApp(ShowBase):
         card = render2d.attachNewNode(cm.generate())
 
         self.addText("A*: ", (-1.7, 0, .55), (0, 255, 0, 1))
-        self.addText("Bellman Ford: ", (-1.7, 0, .75), (255, 0, 255, 1))
+        self.addText("Depth First Search:", (-1.7, 0, .75), (255, 0, 255, 1))
         self.addText("Breadth First Search: ", (-1.7, 0, .65), (255, 0, 0, 1))
         self.addText("Dijkstra's: ", (-1.7, 0, .85), (0, 0, 255, 1))
 
