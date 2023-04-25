@@ -5,6 +5,7 @@ import numpy as np
 from searches import *
 import time
 import csv
+import subprocess
 
 
 class VideoWriter:
@@ -213,8 +214,12 @@ def animate_agents(maze: np.ndarray, a_star_pos: tuple, bfs_pos: tuple, dijkstra
         video_writer.release()
         raise e
     return times
-        
 
+def merge():
+    input_files = ['generated/maze0.mpg', 'generated/maze1.mpg', 'generated/maze2.mpg', 'generated/maze3.mpg']
+    output_file = 'generated/maze.mpg'
+    command = ['ffmpeg', '-i', 'concat:' + '|'.join(input_files), '-c', 'copy', output_file]
+    subprocess.run(command, check=True)
 
 if __name__ == '__main__':
 
@@ -235,6 +240,8 @@ if __name__ == '__main__':
     animate_agents(maze, (1, last_y), (1, 1), (last_x, last_y), (last_x, 1), "1", times) # second rotation
     animate_agents(maze, (last_x, last_y), (1, last_y), (last_x, 1), (1, 1), "2", times) # third rotation
     animate_agents(maze, (last_x, 1), (last_x, last_y), (1, 1), (1, last_y), "3", times) # fourth rotation
+
+    merge()
 
     # outputs the times as a csv
     with open('generated/times.csv', mode = 'w', newline='') as file:
