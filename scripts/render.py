@@ -1,6 +1,7 @@
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import *
 import numpy as np
+from run_search import times
 
 class MyApp(ShowBase):
     
@@ -98,23 +99,15 @@ class MyApp(ShowBase):
         
         self.win.requestProperties(props)
 
-        # coords for the card
-        left, right, top, bottom = -1.7, -.3, .95, .5
-
-        # making the card
-        cm = CardMaker('card')
-        cm.setColor(105, 105, 105, 255)
-        cm.setFrame(left, right, top, bottom)
-        card = render2d.attachNewNode(cm.generate())
-
-        self.addText("A*: ", (-1.7, 0, .55), (0, 255, 0, 1))
-        self.addText("Depth First Search:", (-1.7, 0, .75), (255, 0, 255, 1))
-        self.addText("Breadth First Search: ", (-1.7, 0, .65), (255, 0, 0, 1))
-        self.addText("Dijkstra's: ", (-1.7, 0, .85), (0, 0, 255, 1))
+        # Adding text
+        self.addText("A*: " + str(times["A*"]), (-1.7, 0, .55), (0, 255, 0, 1))
+        self.addText("Depth First Search: " + str(times["DFS"]), (-1.7, 0, .75), (255, 0, 255, 1))
+        self.addText("Breadth First Search: "+ str(times["BFS"]), (-1.7, 0, .65), (255, 0, 0, 1))
+        self.addText("Dijkstra's: " + str(times["Dijkstra's"]), (-1.7, 0, .85), (0, 0, 255, 1))
 
         self.terrain = None  # initializes terrain to none
         self.initiateHeightMap("generated/maze_gray.png", 32, 20)  # creates terrain
-        self.importTexture("generated/maze.mp4", "REPLACE", 317/513)  # imports video onto map
+        self.importTexture("generated/maze0.mpg", "REPLACE", 317/513)  # imports video onto map
 
 
 app = MyApp()

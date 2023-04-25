@@ -123,17 +123,17 @@ def manhattan_distance(source, stop_node, maze_width):
     return np.abs(source_x - goal_x) + np.abs(source_y - goal_y)
 
 
-def animate_agents(maze: np.ndarray, a_star_pos: tuple, bfs_pos: tuple, dijkstra_pos: tuple, dfs_pos: tuple, rotation: str):
+def animate_agents(maze: np.ndarray, a_star_pos: tuple, bfs_pos: tuple, dijkstra_pos: tuple, dfs_pos: tuple, rotation: str, times: dict):
     """Animate the agents moving through the maze. Maze should be a grayscale image."""
     HEIGHT, WIDTH = maze.shape[:2]
 
     # BGR image of the maze
-    background = maze
+    background = maze.copy()
     paths = np.zeros_like(maze, dtype=np.uint8)
     maze = cv2.cvtColor(maze, cv2.COLOR_BGR2GRAY)
     
     # ffmpeg -i generated/video/maze_%02d.png -r 360 maze.mp4 to covert folder of pngs to video
-    video_writer = VideoWriter('generated/maze' + rotation + '.mp4', 360, (paths.shape[1], paths.shape[0]))
+    video_writer = VideoWriter('generated/maze' + rotation + '.mpg', 3600, (paths.shape[1], paths.shape[0]))
 
     # Define the adjacency list for the maze
     adj_list = build_adj_list(maze)
@@ -163,12 +163,6 @@ def animate_agents(maze: np.ndarray, a_star_pos: tuple, bfs_pos: tuple, dijkstra
     a_star_done = False
     dfs_done = False 
 
-    times = {
-        "BFS": 0.0,
-        "Dijkstra's": 0.0,
-        "A*": 0.0,
-        "DFS": 0.0,
-    }
     
     try:        
         # Run the search algorithms until they meet in the middle
@@ -180,7 +174,7 @@ def animate_agents(maze: np.ndarray, a_star_pos: tuple, bfs_pos: tuple, dijkstra
                     background[next_pos[::-1]] = paths[next_pos[::-1]]
                 except StopIteration as e:
                     bfs_done = True
-                    times["BFS"] = e.value
+                    times["BFS"] += (e.value / 4.0)
                     print(f"BFS took {e.value} seconds")
             
             # Dijkstra's
@@ -190,7 +184,7 @@ def animate_agents(maze: np.ndarray, a_star_pos: tuple, bfs_pos: tuple, dijkstra
                     background[next_pos[::-1]] = paths[next_pos[::-1]]
                 except StopIteration as e:
                     dijkstra_done = True
-                    times["Dijkstra's"] = e.value
+                    times["Dijkstra's"] += (e.value / 4.0)
                     print(f"Dijkstra's took {e.value} seconds")
                 
             # A*
@@ -200,7 +194,7 @@ def animate_agents(maze: np.ndarray, a_star_pos: tuple, bfs_pos: tuple, dijkstra
                     background[next_pos[::-1]] = paths[next_pos[::-1]]
                 except StopIteration as e:
                     a_star_done = True
-                    times["A*"] = e.value
+                    times["A*"] += (e.value / 4.0)
                     print(f"A* took {e.value} seconds")
             
             # Bellman Ford
@@ -210,7 +204,7 @@ def animate_agents(maze: np.ndarray, a_star_pos: tuple, bfs_pos: tuple, dijkstra
                     background[next_pos[::-1]] = paths[next_pos[::-1]]
                 except StopIteration as e:
                     dfs_done = True
-                    times["DFS"] = e.value
+                    times["DFS"] += (e.value / 4.0)
                     print(f"DFS took {e.value} seconds")
 
             video_writer.write(background)
@@ -220,6 +214,7 @@ def animate_agents(maze: np.ndarray, a_star_pos: tuple, bfs_pos: tuple, dijkstra
     return times
         
 
+
 if __name__ == '__main__':
 
     # initial maze
@@ -228,13 +223,17 @@ if __name__ == '__main__':
     last_y = maze.shape[0] - 2
     last_x = maze.shape[1] - 2
 
-    animate_agents(maze, (1, 1), (last_x, 1), (1, last_y), (last_x, last_y), "0") # first rotation
 
-    maze = cv2.imread("generated/maze.png")
-    animate_agents(maze, (1, last_y), (1, 1), (last_x, last_y), (last_x, 1), "1") # second rotation
+    animate_agents(maze, (1, 1), (last_x, 1), (1, last_y), (last_x, last_y), "0", times) # first rotation
+    animate_agents(maze, (1, last_y), (1, 1), (last_x, last_y), (last_x, 1), "1", times) # second rotation
+    animate_agents(maze, (last_x, last_y), (1, last_y), (last_x, 1), (1, 1), "2", times) # third rotation
+    animate_agents(maze, (last_x, 1), (last_x, last_y), (1, 1), (1, last_y), "3", times) # fourth rotation
 
-    maze = cv2.imread("generated/maze.png")
-    animate_agents(maze, (last_x, last_y), (1, last_y), (last_x, 1), (1, 1), "2") # third rotation
+    times = {
+        "BFS": 0.0,
+        "Dijkstra's": 0.0,
+        "A*": 0.0,
+        "DFS": 0.0,
+    }
 
-    maze = cv2.imread("generated/maze.png")
-    animate_agents(maze, (last_x, 1), (last_x, last_y), (1, 1), (1, last_y), "3") # fourth rotation
+    print(times)
