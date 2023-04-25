@@ -123,7 +123,7 @@ def manhattan_distance(source, stop_node, maze_width):
     return np.abs(source_x - goal_x) + np.abs(source_y - goal_y)
 
 
-def animate_agents(maze: np.ndarray):
+def animate_agents(maze: np.ndarray, a_star_pos: tuple, bfs_pos: tuple, dijkstra_pos: tuple, dfs_pos: tuple, rotation: str):
     """Animate the agents moving through the maze. Maze should be a grayscale image."""
     HEIGHT, WIDTH = maze.shape[:2]
 
@@ -133,19 +133,16 @@ def animate_agents(maze: np.ndarray):
     maze = cv2.cvtColor(maze, cv2.COLOR_BGR2GRAY)
     
     # ffmpeg -i generated/video/maze_%02d.png -r 360 maze.mp4 to covert folder of pngs to video
-    video_writer = VideoWriter('generated/maze.mp4', 360, (paths.shape[1], paths.shape[0]))
+    video_writer = VideoWriter('generated/maze' + rotation + '.mp4', 360, (paths.shape[1], paths.shape[0]))
 
     # Define the adjacency list for the maze
     adj_list = build_adj_list(maze)
     
-    # Define the agent's starting position
-    last_y = maze.shape[0] - 2
-    last_x = maze.shape[1] - 2
     
-    bfs_runner_pos = [1, 1]
-    dijkstra_runner_pos = [last_x, last_y]
-    a_star_runner_pos = [1, last_y]
-    dfs_runner_pos = [last_x, last_y]
+    bfs_runner_pos = bfs_pos
+    dijkstra_runner_pos = dijkstra_pos
+    a_star_runner_pos = a_star_pos
+    dfs_runner_pos = dfs_pos
     
     center_idx = (maze.shape[1] * maze.shape[0]) // 2
 
@@ -164,7 +161,7 @@ def animate_agents(maze: np.ndarray):
     bfs_done = False
     dijkstra_done = False
     a_star_done = False
-    dfs_done = True
+    dfs_done = False 
 
     times = {
         "BFS": 0.0,
@@ -183,7 +180,7 @@ def animate_agents(maze: np.ndarray):
                     background[next_pos[::-1]] = paths[next_pos[::-1]]
                 except StopIteration as e:
                     bfs_done = True
-                    time["BFS:"] = e.value
+                    times["BFS"] = e.value
                     print(f"BFS took {e.value} seconds")
             
             # Dijkstra's
@@ -214,7 +211,7 @@ def animate_agents(maze: np.ndarray):
                 except StopIteration as e:
                     dfs_done = True
                     times["DFS"] = e.value
-                    print(f"Bellman Ford took {e.value} seconds")
+                    print(f"DFS took {e.value} seconds")
 
             video_writer.write(background)
     except Exception as e:
@@ -224,5 +221,20 @@ def animate_agents(maze: np.ndarray):
         
 
 if __name__ == '__main__':
+
+    # initial maze
     maze = cv2.imread("generated/maze.png")
-    animate_agents(maze)
+    # Define the agent's starting position
+    last_y = maze.shape[0] - 2
+    last_x = maze.shape[1] - 2
+
+    animate_agents(maze, (1, 1), (last_x, 1), (1, last_y), (last_x, last_y), "0") # first rotation
+
+    maze = cv2.imread("generated/maze.png")
+    animate_agents(maze, (1, last_y), (1, 1), (last_x, last_y), (last_x, 1), "1") # second rotation
+
+    maze = cv2.imread("generated/maze.png")
+    animate_agents(maze, (last_x, last_y), (1, last_y), (last_x, 1), (1, 1), "2") # third rotation
+
+    maze = cv2.imread("generated/maze.png")
+    animate_agents(maze, (last_x, 1), (last_x, last_y), (1, 1), (1, last_y), "3") # fourth rotation
