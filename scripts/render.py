@@ -1,7 +1,6 @@
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import *
 import numpy as np
-from run_search import times
 
 class MyApp(ShowBase):
     
@@ -98,6 +97,12 @@ class MyApp(ShowBase):
         self.setupCameraControls(props)
         
         self.win.requestProperties(props)
+        
+        times = {}
+        with open('generated/times.csv') as f:
+            for line in f:
+                key, val= line.split(",")
+                times[key] = float(val)
 
         # Adding text
         self.addText("A*: " + str(times["A*"]), (-1.7, 0, .55), (0, 255, 0, 1))

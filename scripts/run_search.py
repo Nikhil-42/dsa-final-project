@@ -4,6 +4,7 @@ import ffmpeg
 import numpy as np
 from searches import *
 import time
+import csv
 
 
 class VideoWriter:
@@ -223,12 +224,6 @@ if __name__ == '__main__':
     last_y = maze.shape[0] - 2
     last_x = maze.shape[1] - 2
 
-
-    animate_agents(maze, (1, 1), (last_x, 1), (1, last_y), (last_x, last_y), "0", times) # first rotation
-    animate_agents(maze, (1, last_y), (1, 1), (last_x, last_y), (last_x, 1), "1", times) # second rotation
-    animate_agents(maze, (last_x, last_y), (1, last_y), (last_x, 1), (1, 1), "2", times) # third rotation
-    animate_agents(maze, (last_x, 1), (last_x, last_y), (1, 1), (1, last_y), "3", times) # fourth rotation
-
     times = {
         "BFS": 0.0,
         "Dijkstra's": 0.0,
@@ -236,4 +231,13 @@ if __name__ == '__main__':
         "DFS": 0.0,
     }
 
-    print(times)
+    animate_agents(maze, (1, 1), (last_x, 1), (1, last_y), (last_x, last_y), "0", times) # first rotation
+    animate_agents(maze, (1, last_y), (1, 1), (last_x, last_y), (last_x, 1), "1", times) # second rotation
+    animate_agents(maze, (last_x, last_y), (1, last_y), (last_x, 1), (1, 1), "2", times) # third rotation
+    animate_agents(maze, (last_x, 1), (last_x, last_y), (1, 1), (1, last_y), "3", times) # fourth rotation
+
+    # outputs the times as a csv
+    with open('generated/times.csv', mode = 'w', newline='') as file:
+        writer = csv.writer(file)
+        for key, value in times.items():
+            writer.writerow([key,value])
