@@ -107,7 +107,7 @@ if __name__ == '__main__':
     
     AVERAGE_RADIUS = 40
 
-    cv2.imwrite("generated/maze_gray.png", maze)
+    cv2.imwrite("generated/maze_gray.png", cv2.resize(maze, (WIDTH, HEIGHT), interpolation=cv2.INTER_NEAREST))
     
     maze = add_terrain(maze, AVERAGE_RADIUS, (YELLOW, CYAN, MAGENTA))
 
