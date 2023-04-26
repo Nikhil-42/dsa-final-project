@@ -1,7 +1,7 @@
 import cv2 # type: ignore
 import numba # type: ignore
 import numpy as np
-from searches import dijkstra, astar, bfs, dfs
+from searches import dijkstra, astar, bfs, dfs, bellman_ford
 from utils import VideoWriter, idx_to_pos, pos_to_idx, build_adj_list
 import time
 from typing import Any
@@ -108,12 +108,14 @@ def animate_agents(maze: np.ndarray, search_agents, starting_positions, video_wr
         video_writer.write(background)
     return background
 
-def getArguments():
+# sets up arguments
+def getArguments(): 
     parser = argparse.ArgumentParser(description='Run a search algorithm on a maze') 
     parser.add_argument("-d",'--dfs', help='Depth First Search', default=False, action='store_true')
     parser.add_argument("-b",'--bfs', help='Breadth First Search', default=False, action='store_true')
     parser.add_argument("-dj",'--dijkstras', help='Dijkstras Algorithm', default=False,  action='store_true')
     parser.add_argument("-a",'--astar', help='A* Algorithm', default=False, action='store_true')
+    parser.add_argument("-bf",'--bellman_ford', help='Bellman Ford Algorithm', default=False, action='store_true')
     return parser.parse_args()
     
 
@@ -129,9 +131,11 @@ if __name__ == '__main__':
     agents = [
     ]
 
-    args = getArguments()
+    args = getArguments() # a boolean for each algorithm to run
     if len(sys.argv) == 1:
-        raise ValueError("Please enter an algorithm to run")
+        raise ValueError("Please enter an algorithm to run") # no arguments
+    elif len(sys.argv) > 4:
+        raise ValueError("Please enter a maximum of four algorithms to run")
 
     if (args.dijkstras):
         agents.append(("Dijkstra", dijkstra, np.array((0, 0, 128), dtype=np.uint8)))
@@ -141,6 +145,9 @@ if __name__ == '__main__':
         agents.append(("BFS", bfs, np.array((128, 0, 0), dtype=np.uint8)))
     elif (args.dfs):
         agents.append(("DFS", dfs, np.array((127, 127, 0), dtype=np.uint8)))
+    elif (args.bellman_ford):
+        agents.append(("Bellman Ford", bellman_ford, np.array((127, 127, 127), dtype=np.uint8)))
+        
 
     
      # initial maze
