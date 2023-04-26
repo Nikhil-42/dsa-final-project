@@ -108,28 +108,30 @@ def dfs(adj_list: tuple[np.ndarray, np.ndarray], source: int, stop_node: int=-1)
 
 # Bellman Ford pseudocode from https://www.geeksforgeeks.org/bellman-ford-algorithm-dp-23/
 def bellman_ford(adj_list: tuple[np.ndarray, np.ndarray], source: int, stop_node=None):
- # initialize the output table
-    output_table = (np.full(len(adj_list[0]), np.inf, dtype=np.float32), -np.ones(len(adj_list[0]), dtype=np.int32))
+    # initialize the output table
+   output_table = (np.full(len(adj_list[0]), np.inf, dtype=np.float32), -np.ones(len(adj_list[0]), dtype=np.int32))
+   num_elements = len(adj_list[0])
 
-    # set the distance from the source node to itself to 0
-    output_table[0][source] = 0
-    output_table[1][source] = source
+   # set the distance from the source node to itself to 0
+   output_table[0][source] = 0
+   output_table[1][source] = source
 
-    # iterate over all edges and relax them
-    for node_index in range(len(adj_list[0]) - 1):
-        for i, (weight_array, destination_array) in enumerate(adj_list):
-            for edge_weight, destination in zip(weight_array, destination_array):
-                if output_table[0][destination] > output_table[0][node_index] + edge_weight:
-                    output_table[0][destination] = output_table[0][node_index] + edge_weight
-                    output_table[1][destination] = node_index
-                    yield destination
-                    if destination == stop_node:
-                        return output_table
+   # iterate over all edges and relax them
+   for node_index in range(num_elements):
+       for i, (weight_array, destination_array) in enumerate(zip(*adj_list)):
+           for edge_weight, destination in zip(weight_array, destination_array):
+                if( destination < num_elements):
+                    if output_table[0][destination] > output_table[0][node_index] + edge_weight:
+                        output_table[0][destination] = output_table[0][node_index] + edge_weight
+                        output_table[1][destination] = node_index
+                        yield destination
+                        # if destination == stop_node:
+                        #     return output_table
 
-    # check for negative weight cycles
-    for node_index, (weight_array, destination_array) in enumerate(adj_list):
-        for edge_weight, destination in zip(weight_array, destination_array):
-            if output_table[0][destination] > output_table[0][node_index] + edge_weight:
-                raise ValueError("Graph contains negative weight cycle")
+   # check for negative weight cycles
+   for node_index, (weight_array, destination_array) in enumerate(adj_list):
+       for edge_weight, destination in zip(weight_array, destination_array):
+           if output_table[0][destination] > output_table[0][node_index] + edge_weight:
+               raise ValueError("Graph contains negative weight cycle")
 
-    return output_table
+   return output_table

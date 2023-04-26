@@ -1,12 +1,14 @@
 import cv2 # type: ignore
 import numba # type: ignore
 import numpy as np
-from searches import dijkstra, astar, bfs, dfs
+from searches import dijkstra, astar, bfs, dfs, bellman_ford
 from utils import VideoWriter, idx_to_pos, pos_to_idx, build_adj_list
 import time
 from typing import Any
 import itertools
 import json
+import argparse
+import sys
 
 
 def solve_path(backlink_table: np.ndarray, start_node: int, stop_node: int):
@@ -106,10 +108,49 @@ def animate_agents(maze: np.ndarray, search_agents, starting_positions, video_wr
         video_writer.write(background)
     return background
 
+# sets up arguments
+def getArguments(): 
+    parser = argparse.ArgumentParser(description='Run a search algorithm on a maze') 
+    parser.add_argument("-d",'--dfs', help='Depth First Search', default=False, action='store_true')
+    parser.add_argument("-b",'--bfs', help='Breadth First Search', default=False, action='store_true')
+    parser.add_argument("-dj",'--dijkstras', help='Dijkstras Algorithm', default=False,  action='store_true')
+    parser.add_argument("-a",'--astar', help='A* Algorithm', default=False, action='store_true')
+    parser.add_argument("-bf",'--bellman_ford', help='Bellman Ford Algorithm', default=False, action='store_true')
+    return parser.parse_args()
+    
+
 if __name__ == '__main__':
     FPS = 3600
+
+    def astar_pathing(*args, **kwargs):
+        """A* pathing algorithm."""
+        kwargs['heuristic'] = lambda node: manhattan_distance(node, center_idx, maze.shape[1])
+        return astar(*args, **kwargs)
+
+
+    agents = [
+    ]
+
+    args = getArguments() # a boolean for each algorithm to run
+    if len(sys.argv) == 1:
+        raise ValueError("Please enter an algorithm to run") # no arguments
+    elif len(sys.argv) > 4:
+        raise ValueError("Please enter a maximum of four algorithms to run")
+
+    if (args.dijkstras):
+        agents.append(("Dijkstra", dijkstra, np.array((0, 0, 128), dtype=np.uint8)))
+    elif (args.astar):
+        agents.append(("A*", astar_pathing, np.array((0, 128, 0), dtype=np.uint8)))
+    elif (args.bfs):
+        agents.append(("BFS", bfs, np.array((128, 0, 0), dtype=np.uint8)))
+    elif (args.dfs):
+        agents.append(("DFS", dfs, np.array((127, 127, 0), dtype=np.uint8)))
+    elif (args.bellman_ford):
+        agents.append(("Bellman Ford", bellman_ford, np.array((127, 127, 127), dtype=np.uint8)))
+        
+
     
-    # initial maze
+     # initial maze
     maze = cv2.imread("generated/maze.png")
     
     # Define the agent's starting position
@@ -118,17 +159,6 @@ if __name__ == '__main__':
     starting_positions = [(1, 1), (1, last_y), (last_x, last_y), (last_x, 1)]
     center_idx = (maze.shape[1] * maze.shape[0]) // 2
 
-    def astar_pathing(*args, **kwargs):
-        """A* pathing algorithm."""
-        kwargs['heuristic'] = lambda node: manhattan_distance(node, center_idx, maze.shape[1])
-        return astar(*args, **kwargs)
-
-    agents = [
-        ("Dijkstra", dijkstra, np.array((0, 0, 128), dtype=np.uint8)),
-        ("A*", astar_pathing, np.array((0, 128, 0), dtype=np.uint8)),
-        ("BFS", bfs, np.array((128, 0, 0), dtype=np.uint8)),
-        ("DFS", dfs, np.array((127, 127, 0), dtype=np.uint8)),
-    ]
 
     output_data: dict[str, dict[str, Any]] = {}
 
