@@ -100,14 +100,18 @@ if __name__ == '__main__':
     # Open center
     maze[HEIGHT//2-2:HEIGHT//2+3, WIDTH//2-2:WIDTH//2+3] = [0, 0, 0]
     
+    GRAY = (63, 63, 63)
     YELLOW = (0, 63, 63)
     CYAN = (63, 63, 0)
     MAGENTA = (63, 0, 63)
+    RED = (0, 0, 63)
+    GREEN = (0, 63, 0)
+    BLUE = (63, 0, 0)    
     
     AVERAGE_RADIUS = 40
 
     cv2.imwrite("generated/maze_gray.png", cv2.resize(maze, (WIDTH, HEIGHT), interpolation=cv2.INTER_NEAREST))
     
-    maze = add_terrain(maze, AVERAGE_RADIUS, (YELLOW, CYAN, MAGENTA))
+    maze = add_terrain(maze, AVERAGE_RADIUS, (GRAY, YELLOW, CYAN, MAGENTA, RED, GREEN, BLUE))
 
     cv2.imwrite("generated/maze.png", maze)
