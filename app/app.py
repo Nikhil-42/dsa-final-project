@@ -2,6 +2,7 @@
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import *
 import numpy as np
+from direct.task.Task import Task
 from direct.actor.Actor import Actor
 import json
 
@@ -49,7 +50,7 @@ class Maze(ShowBase):
 
     # imports a texture with specified mode ("ADD" or "REPLACE" or "DECAL"))
     def importTexture(self, path: str, mode: str, scale: float):
-        terrain_texture = loader.loadTexture(path)
+        self.terrain_texture = loader.loadTexture(path)
         terrain_texture_stage = TextureStage("terrain_texture_stage")
 
         # checks which mode user used
@@ -60,7 +61,7 @@ class Maze(ShowBase):
         elif mode == "DECAL":
             terrain_texture_stage.setMode(TextureStage.MDecal)
 
-        self.terrain.getRoot().setTexture(terrain_texture_stage, terrain_texture)
+        self.terrain.getRoot().setTexture(terrain_texture_stage, self.terrain_texture)
         self.terrain.getRoot().setTexScale(terrain_texture_stage, scale, scale)
 
     # initiates the height map with specified image
@@ -104,14 +105,24 @@ class Maze(ShowBase):
             self.addText(f"{agent}: {sum(self.run_data[agent]['times']) * 1000}", (-1.7, 0, y), tuple(self.run_data[agent]["color"][::-1] + [1]))
             y += dy
 
-        self.terrain = None  # initializes terrain to none
-        self.initiateHeightMap("generated/maze_gray.png", 32, 20)  # creates terrain
-        self.importTexture("generated/maze.mpg", "REPLACE", 317/513)  # imports video onto map
-
         self.amangus = Actor("models/amangus.glb")
         self.amangus.setPos(0, 100, 0)
         self.amangus.setH(90)
         self.amangus.reparentTo(render)  # reparents amangus to render
+
+        self.terrain = None  # initializes terrain to none
+        self.initiateHeightMap("generated/maze_gray.png", 32, 10)  # creates terrain
+        self.importTexture("generated/maze.mpg", "REPLACE", 317/513)  # imports video onto map
+
+        self.amangus.play("run")
+        async def follow_path(path, task):
+            for node in path:
+                self.amangus.setPos(node % 317, node // 317, 20)
+                await Task.pause(1.0)
+            return task.again
+            
+        self.taskMgr.add(follow_path, "FollowPath", extraArgs=[self.run_data[agent]["paths"][0]], appendTask=True)
+
 
 app = Maze()
 app.run()
