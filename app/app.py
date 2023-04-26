@@ -5,6 +5,7 @@ import numpy as np
 from direct.task.Task import Task
 from direct.actor.Actor import Actor
 import json
+import cv2
 
 class Maze(ShowBase):
     
@@ -45,31 +46,25 @@ class Maze(ShowBase):
                 self.win.movePointer(0, props.getXSize() // 2, props.getYSize() // 2)
             return task.cont
         
+        self.win.movePointer(0, props.getXSize() // 2, props.getYSize() // 2)
         self.taskMgr.add(rotate_camera, "rotateCamera")
         
+    # imports a texture
+    def importTexture(self, path: str):
+        texture = loader.loadTexture(path)
+        texture.setMagfilter(SamplerState.FT_nearest)
+        texture.setMinfilter(SamplerState.FT_nearest)
 
-    # imports a texture with specified mode ("ADD" or "REPLACE" or "DECAL"))
-    def importTexture(self, path: str, mode: str, scale: float):
-        self.terrain_texture = loader.loadTexture(path)
-        terrain_texture_stage = TextureStage("terrain_texture_stage")
-
-        # checks which mode user used
-        if mode == "REPLACE":
-            terrain_texture_stage.setMode(TextureStage.MReplace)
-        elif mode == "ADD":
-            terrain_texture_stage.setMode(TextureStage.MAdd)
-        elif mode == "DECAL":
-            terrain_texture_stage.setMode(TextureStage.MDecal)
-
-        self.terrain.getRoot().setTexture(terrain_texture_stage, self.terrain_texture)
-        self.terrain.getRoot().setTexScale(terrain_texture_stage, scale, scale)
+        return texture
 
     # initiates the height map with specified image
     def initiateHeightMap(self, path: str, block_size: int, vertical_size: int):
         self.terrain = GeoMipTerrain("Maze")
         self.terrain.setBlockSize(block_size)
         self.terrain.getRoot().setSz(vertical_size)  # vertical size
+
         self.terrain.setHeightfield(path)
+        
         self.terrain.setBruteforce(True)  # non-dynamic maze
         self.terrain.getRoot().reparentTo(render)
         self.terrain.generate()
@@ -83,6 +78,45 @@ class Maze(ShowBase):
         textNodePath.setPos(coords)
         cmr12 = loader.loadFont('cmr12.egg')
         text.setFont(cmr12)
+        
+        
+    async def follow_path(self, path, agent):
+        self.amangi[agent].loop("run")
+        for node in path:
+            self.amangi[agent].setPos(node % 317 * 513/317 + 0.5, 513 - (node // 317 * 513/317 + 0.5), 1)
+            await Task.pause(self.maze[node // 317, node % 317] / 255 / 100000)
+        self.amangi[agent].stop()
+        self.runner_finished[agent] = True
+        return Task.done
+    
+    async def recurseSetup(self, rotation):
+        # Swap video for image of solved maze
+        self.video.stop()
+        self.terrain.getRoot().setTexture(self.rotation_frames[0])
+        self.terrain.getRoot().setTexScale(TextureStage.default, 1, 1)
+        
+        while not all(self.runner_finished.values()):
+            await Task.pause(0.5)
+        
+        self.setupRunners((rotation + 1) % 4)
+        return Task.done
+        
+    def setupRunners(self, rotation):
+        # Display the video
+        self.video.setTime(max((self.run_data[agent]['finish_timestamps'][rotation-1] for agent in self.run_data)))
+        self.terrain.getRoot().setTexture(self.video)
+        self.terrain.getRoot().setTexScale(TextureStage.default, 317/513, 317/513)
+        self.video.play()
+        
+        for agent in self.run_data:
+            node = self.run_data[agent]["paths"][rotation][0]
+            self.runner_finished[agent] = False
+            self.amangi[agent].setPos(node % 317 * 513/317 + 0.5, 513 - (node // 317 * 513/317 + 0.5), 1)
+            self.amangi[agent].stop()
+                
+            self.taskMgr.doMethodLater(self.run_data[agent]['finish_timestamps'][rotation], self.follow_path, "FollowPath"+agent, extraArgs=[self.run_data[agent]["paths"][rotation], agent])
+            
+        self.taskMgr.doMethodLater(max((self.run_data[agent]['finish_timestamps'][rotation] for agent in self.run_data)), self.recurseSetup, "RecurseSetup", extraArgs=[rotation])
 
     def __init__(self):
         ShowBase.__init__(self)
@@ -98,31 +132,37 @@ class Maze(ShowBase):
         self.setupCameraControls(props)
         self.win.requestProperties(props)
         
+
+        self.terrain = None  # initializes terrain to none
+        self.initiateHeightMap("generated/maze_gray.png", 32, 1)  # creates terrain
+        self.video = self.importTexture("generated/maze.mpg")  # imports video onto map
+        self.rotation_frames = []
+        for rotation in range(4):
+            self.rotation_frames.append(self.importTexture(f"generated/solved_maze_{rotation}.png"))
+        
+        # self.video.stop()
+        self.terrain.getRoot().setTexture(self.video)
+        self.terrain.getRoot().setTexScale(TextureStage.default, 317/513, 317/513)
+        
+        self.maze = cv2.imread("generated/maze_gray.png", cv2.IMREAD_GRAYSCALE)
+        
         self.run_data = json.load(open("generated/output.json"))
+        self.amangi = {}
+        self.runner_finished = {}
         y = 0.55
         dy = 0.1
         for agent in self.run_data:
             self.addText(f"{agent}: {sum(self.run_data[agent]['times']) * 1000}", (-1.7, 0, y), tuple(self.run_data[agent]["color"][::-1] + [1]))
             y += dy
 
-        self.amangus = Actor("models/amangus.glb")
-        self.amangus.setPos(0, 100, 0)
-        self.amangus.setH(90)
-        self.amangus.reparentTo(render)  # reparents amangus to render
+            new_amangus = Actor("models/amangus.glb")
+            new_amangus.reparentTo(render)  # reparents amangus to render
+            self.amangi[agent] = new_amangus
 
-        self.terrain = None  # initializes terrain to none
-        self.initiateHeightMap("generated/maze_gray.png", 32, 10)  # creates terrain
-        self.importTexture("generated/maze.mpg", "REPLACE", 317/513)  # imports video onto map
+        self.setupRunners(0)
 
-        self.amangus.play("run")
-        async def follow_path(path, task):
-            for node in path:
-                self.amangus.setPos(node % 317, node // 317, 20)
-                await Task.pause(1.0)
-            return task.again
-            
-        self.taskMgr.add(follow_path, "FollowPath", extraArgs=[self.run_data[agent]["paths"][0]], appendTask=True)
-
+        self.camera.setPos((255, 255, 1000))
+        
 
 app = Maze()
 app.run()

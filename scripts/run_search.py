@@ -101,10 +101,14 @@ def animate_agents(maze: np.ndarray, search_agents, starting_positions, video_wr
                 print()
                 print(f"{agent} took {time_taken} seconds")
                 print(f"{agent} path length: {sum(maze[tuple(idx_to_pos(node, WIDTH)[::-1])] for node in path)}")
+                output_data[agent]['finish_frames'].append(video_writer.frame_count)
 
         video_writer.write(background)
+    return background
 
 if __name__ == '__main__':
+    FPS = 3600
+    
     # initial maze
     maze = cv2.imread("generated/maze.png")
     
@@ -120,25 +124,30 @@ if __name__ == '__main__':
         return astar(*args, **kwargs)
 
     agents = [
-        ("Dijkstra", dijkstra, np.array((0, 0, 255), dtype=np.uint8)),
-        ("A*", astar_pathing, np.array((0, 255, 0), dtype=np.uint8)),
-        ("BFS", bfs, np.array((255, 0, 0), dtype=np.uint8)),
-        ("DFS", dfs, np.array((255, 255, 0), dtype=np.uint8)),
+        ("Dijkstra", dijkstra, np.array((0, 0, 128), dtype=np.uint8)),
+        ("A*", astar_pathing, np.array((0, 128, 0), dtype=np.uint8)),
+        ("BFS", bfs, np.array((128, 0, 0), dtype=np.uint8)),
+        ("DFS", dfs, np.array((127, 127, 0), dtype=np.uint8)),
     ]
 
     output_data: dict[str, dict[str, Any]] = {}
 
     # ffmpeg -i generated/video/maze_%02d.png -r 360 maze.mp4 to covert folder of pngs to video
-    with VideoWriter('generated/maze.mpg', 3600, (maze.shape[1], maze.shape[0])) as video_writer:
+    with VideoWriter('generated/maze.mpg', FPS, (maze.shape[1], maze.shape[0])) as video_writer:
         for name, _, color in agents:
             output_data[name] = {}
             output_data[name]['times'] = []
             output_data[name]['paths'] = []
+            output_data[name]['finish_frames'] = []
+            output_data[name]['fps'] = FPS
             output_data[name]['color'] = color.tolist()
 
         for rotation in range(4):
             current_starting_positions = list(itertools.islice(itertools.cycle(starting_positions), rotation, rotation + len(agents)))
-            animate_agents(maze, agents, current_starting_positions, video_writer)
+            cv2.imwrite(f"generated/solved_maze_{rotation}.png", animate_agents(maze, agents, current_starting_positions, video_writer))
+        
+        for name, _, color in agents:
+            output_data[name]['finish_timestamps'] = [frame / FPS for frame in output_data[name]['finish_frames']]
     
     with open("generated/output.json", "w") as f:
         json.dump(output_data, f)

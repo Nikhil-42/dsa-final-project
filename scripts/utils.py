@@ -24,8 +24,10 @@ class VideoWriter:
                 .overwrite_output()
                 .run_async(pipe_stdin=True)
         )
+        self.frame_count = 0
     
-    def write(self, frame): 
+    def write(self, frame):
+        self.frame_count += 1
         self.process.stdin.write(
             frame.astype(np.uint8).tobytes()
         )
