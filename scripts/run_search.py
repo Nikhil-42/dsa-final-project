@@ -1,87 +1,12 @@
 import cv2
 import numba
-import ffmpeg
 import numpy as np
-from searches import *
+from searches import dijkstra, astar, bfs, dfs
+from utils import VideoWriter, idx_to_pos, pos_to_idx, build_adj_list
 import time
 import csv
-import subprocess
-
-
-class VideoWriter:
-    def __init__(self, filepath, fps, shape, input_args: dict = None, output_args: dict = None):
-        if input_args is None:
-            input_args = {}
-        if output_args is None:
-            output_args = {}
-        input_args['framerate'] = fps
-        input_args['pix_fmt'] = 'bgr24'
-        input_args['s'] = '{}x{}'.format(*shape)
-        self.filepath = filepath
-        self.shape = shape
-        self.input_args = input_args
-        self.output_args = output_args
-        self.process = (
-            ffmpeg
-                .input('pipe:', format='rawvideo', **input_args)
-                .filter('fps', fps=30, round='up')
-                .output(self.filepath, **output_args)
-                .overwrite_output()
-                .run_async(pipe_stdin=True)
-        )
-    
-    def write(self, frame): 
-        self.process.stdin.write(
-            frame.astype(np.uint8).tobytes()
-        )
-
-    def release(self):
-        self.process.stdin.close()
-        self.process.wait()
-    
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args):
-        return self.release()
-
-
-@numba.njit(cache=True, parallel=True)
-def build_adj_list(maze: np.ndarray):
-    """Build an adjacency list from a maze."""
-    
-    # Create a mask that filters invalid neighbor positions
-    def in_range(x, y):
-        return (0 < x) * (x < maze.shape[1]-1) * (0 < y) * (y < maze.shape[0]-1)
-    
-    # Define an iterator of relative neighbor positions
-    neighbor_deltas = np.array(((0, -1), (0, 1), (-1, 0), (1, 0)))
-    
-    # Conversion factor from pixel height delta. Maps [-256,256] to (0, inf)
-    # Divide by 88.7228390619 = ln(floatmax) | 256 / 88.7228390619 = 2.88539
-    remap = lambda x: x if x != 255 else np.inf
-    
-    adj_list = (np.empty((maze.shape[0] * maze.shape[1], 4), dtype=np.float32), np.empty((maze.shape[0] * maze.shape[1], 4), dtype=np.int32))
-    
-    for i in numba.prange(adj_list[0].shape[0]):
-        x, y = i % maze.shape[1], i // maze.shape[1]
-        
-        # Compute neighbor positions
-        neighbors = neighbor_deltas + np.array((x, y))
-
-        adj_list[1][i] = np.array([nx + ny * maze.shape[1] for nx, ny in neighbors])
-        adj_list[0][i] = np.array([0.5 * remap(maze[ny, nx]) + 0.5 * remap(maze[y, x]) if in_range(nx, ny) else np.inf for nx, ny in neighbors])
-    
-    return adj_list
-
-@numba.njit(cache=True)
-def idx_to_pos(index, maze_width):
-    return index % maze_width, index // maze_width
-
-@numba.njit(cache=True)
-def pos_to_idx(pos, maze_width):
-    return pos[0] + pos[1] * maze_width 
-
+from typing import Any
+import itertools
 
 def search(start_idx, end_idx, pathing, paths: np.ndarray, color):
     """Search for a path from start_pos to end_pos using pathing."""   
@@ -103,7 +28,6 @@ def search(start_idx, end_idx, pathing, paths: np.ndarray, color):
                 status = BACKTRACKING if search_idx == end_idx else DONE
                 if status == BACKTRACKING:
                     output_table = e.value
-                    path_length = output_table[0][end_idx]
                     backtrack = solve_path(output_table[1], start_idx, end_idx)
         elif status == BACKTRACKING:
             try:
@@ -113,7 +37,7 @@ def search(start_idx, end_idx, pathing, paths: np.ndarray, color):
                 yield next_node_pos
             except StopIteration as e:
                 status = DONE
-    return time_taken, path_length 
+    return time_taken, output_table 
 
 
 def solve_path(backlink_table: np.ndarray, start_node: int, stop_node: int):
@@ -124,6 +48,7 @@ def solve_path(backlink_table: np.ndarray, start_node: int, stop_node: int):
     for node in path[::-1]:
         yield node
 
+
 # this is for our A* algorithm
 @numba.njit(cache=True)
 def manhattan_distance(source, stop_node, maze_width):
@@ -133,8 +58,11 @@ def manhattan_distance(source, stop_node, maze_width):
     goal_y = stop_node // maze_width
     return np.abs(source_x - goal_x) + np.abs(source_y - goal_y)
 
-def animate_agents(maze: np.ndarray, a_star_pos: tuple, bfs_pos: tuple, dijkstra_pos: tuple, dfs_pos: tuple, video_writer: VideoWriter):
-    """Animate the agents moving through the maze. Maze should be a grayscale image."""
+
+def animate_agents(maze: np.ndarray, search_agents, starting_positions, video_writer: VideoWriter):
+    """Animate the agents moving through the maze. Maze should be a grayscale image.
+        agent = (name: str, pathing_func, pos: np.ndarray[int], color: np.ndarray[np.uint8])
+    """
     HEIGHT, WIDTH = maze.shape[:2]
 
     # BGR image of the maze
@@ -142,90 +70,35 @@ def animate_agents(maze: np.ndarray, a_star_pos: tuple, bfs_pos: tuple, dijkstra
     paths = np.zeros_like(maze, dtype=np.uint8)
     maze = cv2.cvtColor(maze, cv2.COLOR_BGR2GRAY)
 
-
     # Define the adjacency list for the maze
     adj_list = build_adj_list(maze)
     
-    
-    bfs_runner_pos = bfs_pos
-    dijkstra_runner_pos = dijkstra_pos
-    a_star_runner_pos = a_star_pos
-    dfs_runner_pos = dfs_pos
-    
-    center_idx = (maze.shape[1] * maze.shape[0]) // 2
+    # Label the center index of the maze
+    center_idx = (maze.shape[1] * maze.shape[0]) // 2    
 
     # Instantiate the agents' search algorithms
-    bfs_runner_pathing = bfs(adj_list, pos_to_idx(bfs_runner_pos, WIDTH), center_idx)
-    dijkstra_runner_pathing = dijkstra(adj_list, pos_to_idx(dijkstra_runner_pos, WIDTH), center_idx)
-    a_star_runner_pathing = a_star(adj_list, pos_to_idx(a_star_runner_pos, WIDTH), center_idx, lambda node: manhattan_distance(node, center_idx, maze.shape[1]))
-    dfs_pathing = dfs(adj_list, pos_to_idx(dfs_runner_pos, WIDTH), center_idx)
-    
+    pathings = [pathing_func(adj_list, pos_to_idx(pos, WIDTH), center_idx) for (_, pathing_func, _), pos in zip(search_agents, starting_positions)]
     # Instantiate the agents' search runners
-    bfs_search = search(pos_to_idx(bfs_runner_pos, WIDTH), center_idx, bfs_runner_pathing, paths, np.array([255, 0, 0], dtype=np.uint8))
-    dijkstra_search = search(pos_to_idx(dijkstra_runner_pos, WIDTH), center_idx, dijkstra_runner_pathing, paths, np.array([0, 255, 0], dtype=np.uint8))
-    a_star_search = search(pos_to_idx(a_star_runner_pos, WIDTH), center_idx, a_star_runner_pathing, paths, np.array([0, 0, 255], dtype=np.uint8))
-    dfs_search = search(pos_to_idx(dfs_runner_pos, WIDTH), center_idx, dfs_pathing, paths, np.array([128, 128, 0], dtype=np.uint8))
-    
-    bfs_done = False
-    dijkstra_done = False
-    a_star_done = False
-    dfs_done = False 
+    searches = [search(pos_to_idx(pos, WIDTH), center_idx, pathing, paths, color) for pathing, (_, _, color), pos in zip(pathings, search_agents, starting_positions)]
+    done = [False] * len(search_agents)
     
     # Run the search algorithms until they meet in the middle
-    while not (bfs_done and dijkstra_done and a_star_done and dfs_done):
-        # BFS
-        if not bfs_done:
+    while not all(done):
+        for i, (agent, _, _) in enumerate(search_agents):
+            if done[i]:
+                continue
             try:
-                next_pos = next(bfs_search)
+                next_pos = next(searches[i])
                 background[next_pos[::-1]] = paths[next_pos[::-1]]
             except StopIteration as e:
-                bfs_done = True
-                times["BFS"] += (e.value[0] / 4.0)
-                path_lengths["BFS"] += e.value[1]
-                print(f"BFS took {e.value[0]} seconds")
-        
-        # Dijkstra's
-        if not dijkstra_done:
-            try:
-                next_pos = next(dijkstra_search)
-                background[next_pos[::-1]] = paths[next_pos[::-1]]
-            except StopIteration as e:
-                dijkstra_done = True
-                times["Dijkstra's"] += (e.value[0] / 4.0)
-                path_lengths["Dijkstra's"] += e.value[1]
-                print(f"Dijkstra's took {e.value[0]} seconds")
-            
-        # A*
-        if not a_star_done:
-            try:
-                next_pos = next(a_star_search)
-                background[next_pos[::-1]] = paths[next_pos[::-1]]
-            except StopIteration as e:
-                a_star_done = True
-                times["A*"] += (e.value[0] / 4.0)
-                path_lengths["A*"] += e.value[1]
-                print(f"A* took {e.value[0]} seconds")
-        
-        # DFS Ford
-        if not dfs_done:
-            try:
-                next_pos = next(dfs_search)
-                background[next_pos[::-1]] = paths[next_pos[::-1]]
-            except StopIteration as e:
-                dfs_done = True
-                times["DFS"] += (e.value[0] / 4.0)
-                path_lengths["DFS"] += e.value[1]
-                print(f"DFS took {e.value[0]} seconds")
+                time_taken, output_table = e.value
+                done[i] = True
+                output_data[agent].append({'time': time_taken, 'output_table': output_table})
+                print()
+                print(f"{agent} took {time_taken} seconds")
+                print(f"{agent} path length: {output_table[0][center_idx]}")
 
         video_writer.write(background)
-    return times
-
-# merges all of our four rotations into one
-def merge():
-    input_files = ['generated/maze0.mpg', 'generated/maze1.mpg', 'generated/maze2.mpg', 'generated/maze3.mpg']
-    output_file = 'generated/maze.mpg'
-    command = ['ffmpeg', '-i', 'concat:' + '|'.join(input_files), '-c', 'copy', output_file]
-    subprocess.run(command, check=True)
 
 def writeDict(d, name):
     # outputs the times as a csv
@@ -233,32 +106,32 @@ def writeDict(d, name):
         writer = csv.writer(file)
         for key, value in d.items():
             writer.writerow([key,value])
-    
 
 if __name__ == '__main__':
-
     # initial maze
     maze = cv2.imread("generated/maze.png")
+    
     # Define the agent's starting position
     last_y = maze.shape[0] - 2
     last_x = maze.shape[1] - 2
+    starting_positions = [(1, 1), (1, last_y), (last_x, last_y), (last_x, 1)]
+    center_idx = (maze.shape[1] * maze.shape[0]) // 2
+    
+    agents = [
+        ("Dijkstra", dijkstra, np.array((0, 0, 255), dtype=np.uint8)),
+        ("A*", lambda *args, **kwargs: astar(*args, heuristic=lambda node: manhattan_distance(node, center_idx, maze.shape[1]), **kwargs), np.array((0, 255, 0), dtype=np.uint8)),
+        ("BFS", bfs, np.array((255, 0, 0), dtype=np.uint8)),
+        ("DFS", dfs, np.array((255, 255, 0), dtype=np.uint8)),
+    ]
 
-    times = {
-        "BFS": 0.0,
-        "Dijkstra's": 0.0,
-        "A*": 0.0,
-        "DFS": 0.0,
-    }
-    path_lengths = times.copy()
+    output_data: dict[str, list[dict[str, Any]]] = {}
 
     # ffmpeg -i generated/video/maze_%02d.png -r 360 maze.mp4 to covert folder of pngs to video
     with VideoWriter('generated/maze.mpg', 3600, (maze.shape[1], maze.shape[0])) as video_writer:
-        animate_agents(maze, (1, 1), (last_x, 1), (1, last_y), (last_x, last_y), video_writer) # first rotation
-        animate_agents(maze, (1, last_y), (1, 1), (last_x, last_y), (last_x, 1), video_writer) # second rotation
-        animate_agents(maze, (last_x, last_y), (1, last_y), (last_x, 1), (1, 1), video_writer) # third rotation
-        animate_agents(maze, (last_x, 1), (last_x, last_y), (1, 1), (1, last_y), video_writer) # fourth rotation
+        for name, _, _ in agents:
+            output_data[name] = []
 
-
-    writeDict(times, "times") # writes the dictionary of times to a csv
-    writeDict(path_lengths, "path_lengths") # writes the dictionary of path lengths to a csv
+        for rotation in range(4):
+            current_starting_positions = list(itertools.islice(itertools.cycle(starting_positions), rotation, rotation + len(agents)))
+            animate_agents(maze, agents, current_starting_positions, video_writer)
 

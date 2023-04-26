@@ -36,7 +36,7 @@ def bfs(adj_list: tuple[np.ndarray, np.ndarray], source: int, stop_node: int=-1)
 
     return output_table
 
-def a_star(adj_list: tuple[np.ndarray, np.ndarray], source: int, stop_node=None, heuristic=lambda node: 0):
+def astar(adj_list: tuple[np.ndarray, np.ndarray], source: int, stop_node=None, heuristic=lambda node: 0):
     """Takes an adjacency list of (weight_array, destination_array) edge entries where the index is the from node
     as well as a source and returns a table embedding the shortest path for each destination node"""
     
@@ -68,7 +68,7 @@ def a_star(adj_list: tuple[np.ndarray, np.ndarray], source: int, stop_node=None,
     return output_table
 
 def dijkstra(adj_list: tuple[np.ndarray, np.ndarray], source: int, stop_node: int=-1):
-    return a_star(adj_list, source, stop_node, lambda node: 0.0)
+    return astar(adj_list, source, stop_node, lambda node: 0.0)
 
 def dfs(adj_list: tuple[np.ndarray, np.ndarray], source: int, stop_node: int=-1):
     """Takes an adjacency list of (weight_array, destination_array) edge entries where the index is the from node
