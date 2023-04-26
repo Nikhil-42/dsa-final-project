@@ -5,4 +5,6 @@ numba==0.56.4
 numpy==1.23.5
 opencv-python==4.7.0.72
 Panda3D==1.10.13
+panda3d-gltf==0.14
+panda3d-simplepbr==0.10
 Pillow==9.5.0
