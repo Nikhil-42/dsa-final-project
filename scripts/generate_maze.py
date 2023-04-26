@@ -1,9 +1,8 @@
 import random
 import numpy as np
-import numba
-import cv2
+import numba # type: ignore
+import cv2 # type: ignore
 
-# @numba.jit(cache=True, forceobj=True)
 def add_terrain(maze, average_radius=60, colors=((255,0,0), (0,255,0), (0,0,255))):
     height, width, channels = maze.shape
     # size length^2 / average radius

@@ -1,10 +1,10 @@
-import numba
-import ffmpeg
+import numba # type: ignore
+import ffmpeg # type: ignore
 import numpy as np
 
 
 class VideoWriter:
-    def __init__(self, filepath, fps, shape, input_args: dict = None, output_args: dict = None):
+    def __init__(self, filepath, fps, shape, input_args: dict|None = None, output_args: dict|None = None):
         if input_args is None:
             input_args = {}
         if output_args is None:

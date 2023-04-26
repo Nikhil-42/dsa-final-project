@@ -1,12 +1,23 @@
-import cv2
-import numba
+import cv2 # type: ignore
+import numba # type: ignore
 import numpy as np
 from searches import dijkstra, astar, bfs, dfs
 from utils import VideoWriter, idx_to_pos, pos_to_idx, build_adj_list
 import time
-import csv
 from typing import Any
 import itertools
+import json
+
+
+def solve_path(backlink_table: np.ndarray, start_node: int, stop_node: int):
+    """Solve the path from the distance table."""
+    path = [stop_node]
+    while path[-1] != start_node:
+        path.append(int(backlink_table[path[-1]]))
+    for node in path[::-1]:
+        yield node
+    return path[::-1]
+
 
 def search(start_idx, end_idx, pathing, paths: np.ndarray, color):
     """Search for a path from start_pos to end_pos using pathing."""   
@@ -14,7 +25,7 @@ def search(start_idx, end_idx, pathing, paths: np.ndarray, color):
     WIDTH = paths.shape[1]
     time_taken = 0.0
     path_length = 0.0
-    status = SEARCHING    
+    status = SEARCHING
     while not status == DONE:
         if status == SEARCHING:
             try:
@@ -36,17 +47,9 @@ def search(start_idx, end_idx, pathing, paths: np.ndarray, color):
                 paths[next_node_pos[::-1]] -= color
                 yield next_node_pos
             except StopIteration as e:
+                path = e.value
                 status = DONE
-    return time_taken, output_table 
-
-
-def solve_path(backlink_table: np.ndarray, start_node: int, stop_node: int):
-    """Solve the path from the distance table."""
-    path = [stop_node]
-    while path[-1] != start_node:
-        path.append(backlink_table[path[-1]])
-    for node in path[::-1]:
-        yield node
+    return time_taken, path 
 
 
 # this is for our A* algorithm
@@ -91,21 +94,15 @@ def animate_agents(maze: np.ndarray, search_agents, starting_positions, video_wr
                 next_pos = next(searches[i])
                 background[next_pos[::-1]] = paths[next_pos[::-1]]
             except StopIteration as e:
-                time_taken, output_table = e.value
+                time_taken, path = e.value
                 done[i] = True
-                output_data[agent].append({'time': time_taken, 'output_table': output_table})
+                output_data[agent]['times'].append(time_taken)
+                output_data[agent]['paths'].append(path)
                 print()
                 print(f"{agent} took {time_taken} seconds")
-                print(f"{agent} path length: {output_table[0][center_idx]}")
+                print(f"{agent} path length: {sum(maze[tuple(idx_to_pos(node, WIDTH)[::-1])] for node in path)}")
 
         video_writer.write(background)
-
-def writeDict(d, name):
-    # outputs the times as a csv
-    with open('generated/' + name + '.csv', mode = 'w', newline='') as file:
-        writer = csv.writer(file)
-        for key, value in d.items():
-            writer.writerow([key,value])
 
 if __name__ == '__main__':
     # initial maze
@@ -116,22 +113,32 @@ if __name__ == '__main__':
     last_x = maze.shape[1] - 2
     starting_positions = [(1, 1), (1, last_y), (last_x, last_y), (last_x, 1)]
     center_idx = (maze.shape[1] * maze.shape[0]) // 2
-    
+
+    def astar_pathing(*args, **kwargs):
+        """A* pathing algorithm."""
+        kwargs['heuristic'] = lambda node: manhattan_distance(node, center_idx, maze.shape[1])
+        return astar(*args, **kwargs)
+
     agents = [
         ("Dijkstra", dijkstra, np.array((0, 0, 255), dtype=np.uint8)),
-        ("A*", lambda *args, **kwargs: astar(*args, heuristic=lambda node: manhattan_distance(node, center_idx, maze.shape[1]), **kwargs), np.array((0, 255, 0), dtype=np.uint8)),
+        ("A*", astar_pathing, np.array((0, 255, 0), dtype=np.uint8)),
         ("BFS", bfs, np.array((255, 0, 0), dtype=np.uint8)),
         ("DFS", dfs, np.array((255, 255, 0), dtype=np.uint8)),
     ]
 
-    output_data: dict[str, list[dict[str, Any]]] = {}
+    output_data: dict[str, dict[str, Any]] = {}
 
     # ffmpeg -i generated/video/maze_%02d.png -r 360 maze.mp4 to covert folder of pngs to video
     with VideoWriter('generated/maze.mpg', 3600, (maze.shape[1], maze.shape[0])) as video_writer:
-        for name, _, _ in agents:
-            output_data[name] = []
+        for name, _, color in agents:
+            output_data[name] = {}
+            output_data[name]['times'] = []
+            output_data[name]['paths'] = []
+            output_data[name]['color'] = color.tolist()
 
         for rotation in range(4):
             current_starting_positions = list(itertools.islice(itertools.cycle(starting_positions), rotation, rotation + len(agents)))
             animate_agents(maze, agents, current_starting_positions, video_writer)
-
+    
+    with open("generated/output.json", "w") as f:
+        json.dump(output_data, f)

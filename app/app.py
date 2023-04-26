@@ -1,11 +1,11 @@
+# type: ignore
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import *
 import numpy as np
 from direct.actor.Actor import Actor
+import json
 
-import simplepbr
-
-class MyApp(ShowBase):
+class Maze(ShowBase):
     
     def setupCameraControls(self, props: WindowProperties):
         # create reasonable camera controls
@@ -86,37 +86,23 @@ class MyApp(ShowBase):
     def __init__(self):
         ShowBase.__init__(self)
         
-        # simplepbr.init()
-        
         # exit on escape
         self.accept("escape", self.userExit)
         
-
         props = WindowProperties()
-        
         # set relative mode and hide the cursor
         props.setCursorHidden(True)
         # sets window size
         props.setSize(1280, 720)
-        
         self.setupCameraControls(props)
-        
         self.win.requestProperties(props)
         
-        times = {}
-        with open('generated/times.csv') as f:
-            for line in f:
-                key, val= line.split(",")
-                times[key] = float(val)
-                times[key] *= 1000  # converts to milliseconds
-                times[key] = round(times[key], 4)  # rounds to 2 decimal places
-
-
-        # Adding text
-        self.addText("A*: " + str(times["A*"]) + " ms", (-1.7, 0, .55), (0, 255, 0, 1))
-        self.addText("Depth First Search: " + str(times["DFS"]) + " ms", (-1.7, 0, .75), (0, 128, 128, 1))
-        self.addText("Breadth First Search: "+ str(times["BFS"]) + " ms", (-1.7, 0, .65), (255, 0, 0, 1))
-        self.addText("Dijkstra's: " + str(times["Dijkstra's"]) + " ms", (-1.7, 0, .85), (0, 0, 255, 1))
+        self.run_data = json.load(open("generated/output.json"))
+        y = 0.55
+        dy = 0.1
+        for agent in self.run_data:
+            self.addText(f"{agent}: {sum(self.run_data[agent]['times']) * 1000}", (-1.7, 0, y), tuple(self.run_data[agent]["color"][::-1] + [1]))
+            y += dy
 
         self.terrain = None  # initializes terrain to none
         self.initiateHeightMap("generated/maze_gray.png", 32, 20)  # creates terrain
@@ -127,5 +113,5 @@ class MyApp(ShowBase):
         self.amangus.setH(90)
         self.amangus.reparentTo(render)  # reparents amangus to render
 
-app = MyApp()
+app = Maze()
 app.run()
