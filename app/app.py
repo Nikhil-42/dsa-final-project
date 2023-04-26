@@ -1,4 +1,5 @@
 # type: ignore
+from procedural_maze import build_maze
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import *
 import numpy as np
@@ -57,18 +58,6 @@ class Maze(ShowBase):
 
         return texture
 
-    # initiates the height map with specified image
-    def initiateHeightMap(self, path: str, block_size: int, vertical_size: int):
-        self.terrain = GeoMipTerrain("Maze")
-        self.terrain.setBlockSize(block_size)
-        self.terrain.getRoot().setSz(vertical_size)  # vertical size
-
-        self.terrain.setHeightfield(path)
-        
-        self.terrain.setBruteforce(True)  # non-dynamic maze
-        self.terrain.getRoot().reparentTo(render)
-        self.terrain.generate()
-
     def addText(self, text_str: str, coords: tuple, color: tuple):
         text = TextNode('node name')
         text.setText(text_str)
@@ -78,13 +67,19 @@ class Maze(ShowBase):
         textNodePath.setPos(coords)
         cmr12 = loader.loadFont('cmr12.egg')
         text.setFont(cmr12)
+    
+    def createMaze(self):
+        maze_obj = build_maze(self.maze, self.maze_gray)
         
+        self.maze_node = render.attachNewNode(maze_obj)
+        self.maze_node.setTwoSided(True)
         
     async def follow_path(self, path, agent):
         self.amangi[agent].loop("run")
         for node in path:
-            self.amangi[agent].setPos(node % 317 * 513/317 + 0.5, 513 - (node // 317 * 513/317 + 0.5), 1)
-            await Task.pause(self.maze[node // 317, node % 317] / 255 / 100000)
+            # TODO make this not hard coded and fix the scaling
+            self.amangi[agent].setPos(node % 317 * + 0.5, 512 - (node // 317 + 0.5), 1)
+            await Task.pause(self.maze_gray[node // 317, node % 317] / 255 / 100000)
         self.amangi[agent].stop()
         self.runner_finished[agent] = True
         return Task.done
@@ -92,8 +87,7 @@ class Maze(ShowBase):
     async def recurseSetup(self, rotation):
         # Swap video for image of solved maze
         self.video.stop()
-        self.terrain.getRoot().setTexture(self.rotation_frames[0])
-        self.terrain.getRoot().setTexScale(TextureStage.default, 1, 1)
+        self.maze_node.setTexture(self.rotation_frames[0])
         
         while not all(self.runner_finished.values()):
             await Task.pause(0.5)
@@ -104,8 +98,7 @@ class Maze(ShowBase):
     def setupRunners(self, rotation):
         # Display the video
         self.video.setTime(max((self.run_data[agent]['finish_timestamps'][rotation-1] for agent in self.run_data)))
-        self.terrain.getRoot().setTexture(self.video)
-        self.terrain.getRoot().setTexScale(TextureStage.default, 317/513, 317/513)
+        self.maze_node.setTexture(self.video)
         self.video.play()
         
         for agent in self.run_data:
@@ -132,19 +125,19 @@ class Maze(ShowBase):
         self.setupCameraControls(props)
         self.win.requestProperties(props)
         
-
-        self.terrain = None  # initializes terrain to none
-        self.initiateHeightMap("generated/maze_gray.png", 32, 1)  # creates terrain
+        self.maze = cv2.imread("generated/maze.png")
+        self.maze_gray = cv2.imread("generated/maze_gray.png", cv2.IMREAD_GRAYSCALE)
         self.video = self.importTexture("generated/maze.mpg")  # imports video onto map
+        self.video.stop()
+        
+        
         self.rotation_frames = []
         for rotation in range(4):
             self.rotation_frames.append(self.importTexture(f"generated/solved_maze_{rotation}.png"))
         
-        # self.video.stop()
-        self.terrain.getRoot().setTexture(self.video)
-        self.terrain.getRoot().setTexScale(TextureStage.default, 317/513, 317/513)
+        self.createMaze()
+        self.maze_node.setTexture(self.video)
         
-        self.maze = cv2.imread("generated/maze_gray.png", cv2.IMREAD_GRAYSCALE)
         
         self.run_data = json.load(open("generated/output.json"))
         self.amangi = {}

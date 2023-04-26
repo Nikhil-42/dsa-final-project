@@ -7,20 +7,7 @@ import numpy as np
 from direct.task.Task import Task
 from direct.actor.Actor import Actor
 
-def normalized(*args):
-    """Helper function to normalize a vector inline.
 
-    Returns
-    -------
-    LVector3
-        the normalized vector
-    """
-    vec = LVector3(*args)
-    vec.normalize()
-    return vec
-
-def idx(x, y, z, depth, width):
-    return z + x * depth + y * depth * width
 
 def make_grid(width, height, depth):
     format = GeomVertexFormat.getV3n3cpt2()
@@ -37,7 +24,7 @@ def make_grid(width, height, depth):
                 vertex.addData3f(x, y, z)
                 normal.addData3f(0, 0, 1)
                 color.addData4f(1, 1, 1, 1)
-                texcoord.addData2f(x/(width), y/(height))
+                texcoord.addData2f(x/(width-1), 1 - y/(height-1))
     
     return vdata
 
@@ -115,23 +102,3 @@ def build_maze(maze, maze_gray):
     snode.addGeom(grid)
     
     return snode
-
-class Test(ShowBase):
-    def __init__(self):
-        super().__init__()
-        
-        maze = cv2.imread('generated/maze.png')
-        maze_gray = cv2.imread('generated/maze_gray.png', cv2.IMREAD_GRAYSCALE)
-        maze_obj = build_maze(maze, maze_gray)
-        
-        maze_node = render.attachNewNode(maze_obj)
-        maze_node.setTwoSided(True)
-        
-        texture = loader.loadTexture('generated/maze_gray.png')
-        texture.setMagfilter(SamplerState.FT_nearest)
-        texture.setMinfilter(SamplerState.FT_nearest)
-        
-        maze_node.setTexture(texture)
-
-test = Test()
-test.run()

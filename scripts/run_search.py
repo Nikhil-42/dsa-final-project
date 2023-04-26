@@ -163,7 +163,7 @@ if __name__ == '__main__':
     output_data: dict[str, dict[str, Any]] = {}
 
     # ffmpeg -i generated/video/maze_%02d.png -r 360 maze.mp4 to covert folder of pngs to video
-    with VideoWriter('generated/maze.mpg', FPS, (maze.shape[1], maze.shape[0])) as video_writer:
+    with VideoWriter('generated/maze.mpg', FPS, (maze.shape[1], maze.shape[0]), output_args={'s': "512x512"}) as video_writer:
         for name, _, color in agents:
             output_data[name] = {}
             output_data[name]['times'] = []
