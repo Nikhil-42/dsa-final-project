@@ -3,6 +3,7 @@ import numpy as np
 import numba # type: ignore
 import cv2 # type: ignore
 
+
 def add_terrain(maze, average_radius=60, colors=((255,0,0), (0,255,0), (0,0,255))):
     height, width, channels = maze.shape
     # size length^2 / average radius
