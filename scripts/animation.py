@@ -1,8 +1,6 @@
 import cv2  # type: ignore
 import numpy as np
 from utils import VideoWriter, idx_to_pos, pos_to_idx, build_adj_list
-from searches import dijkstra, astar, bfs, dfs, manhattan_distance
-import numba
 import time
 from typing import Any
 

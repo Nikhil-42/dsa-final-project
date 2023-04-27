@@ -1,10 +1,8 @@
 import cv2  # type: ignore
-import numba  # type: ignore
 import numpy as np
 from searches import dijkstra, astar, bfs, dfs
-from utils import VideoWriter, idx_to_pos, pos_to_idx, build_adj_list
-from animation import animate_agents, search, output_data
-import time
+from utils import VideoWriter
+from animation import animate_agents, output_data
 from typing import Any
 import itertools
 import json
