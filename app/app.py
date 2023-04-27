@@ -6,6 +6,7 @@ import numpy as np
 from direct.task.Task import Task
 from direct.actor.Actor import Actor
 import json
+import simplepbr
 import cv2
 
 class Maze(ShowBase):
@@ -93,7 +94,7 @@ class Maze(ShowBase):
     async def recurseSetup(self, rotation):
         # Swap video for image of solved maze
         self.video.stop()
-        self.maze_node.setTexture(self.rotation_frames[0])
+        self.maze_node.setTexture(self.rotation_frames[rotation])
         
         while not all(self.runner_finished.values()):
             await Task.pause(0.5)
@@ -107,9 +108,6 @@ class Maze(ShowBase):
         self.maze_node.setTexture(self.video)
         self.video.play()
 
-        maze_length = len(self.maze)
-        video_maze_length = self.video.video_width
-        
         for agent in self.run_data:
             node = self.run_data[agent]["paths"][rotation][0]
             next_node = self.run_data[agent]["paths"][rotation][1]
@@ -124,6 +122,7 @@ class Maze(ShowBase):
 
     def __init__(self):
         ShowBase.__init__(self)
+        simplepbr.init()
         
         # exit on escape
         self.accept("escape", self.userExit)
@@ -135,6 +134,14 @@ class Maze(ShowBase):
         props.setSize(1280, 720)
         self.setupCameraControls(props)
         self.win.requestProperties(props)
+        
+        dlight = DirectionalLight('dlight')
+        dlight.setColor((1, 1, 1, 1))
+        dlnp = render.attachNewNode(dlight)
+        dlnp.setHpr(0, -60, 180)
+        render.setLight(dlnp)
+        dlight.setShadowCaster(True, 512, 512)
+        render.setShaderAuto()
         
         self.maze = cv2.imread("generated/maze.png")
         self.maze_gray = cv2.imread("generated/maze_gray.png", cv2.IMREAD_GRAYSCALE)
@@ -161,6 +168,7 @@ class Maze(ShowBase):
             new_amangus = Actor("models/amangus.glb")
             new_amangus.reparentTo(render)  # reparents amangus to render
             new_amangus.setScale(2)  # scales amangus
+            # new_amangus.setColor(LVecBase4f(*self.run_data[agent]["color"], 1))
             self.amangi[agent] = new_amangus
 
         self.setupRunners(0)
