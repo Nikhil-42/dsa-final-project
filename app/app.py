@@ -7,7 +7,6 @@ import numpy as np
 from direct.task.Task import Task
 from direct.actor.Actor import Actor
 import json
-import simplepbr
 import cv2
 
 class Maze(ShowBase):
@@ -70,7 +69,7 @@ class Maze(ShowBase):
         text.setFont(cmr12)
     
     def createMaze(self):
-        maze_obj = build_maze(self.maze, self.maze_gray, (512, 512))
+        maze_obj = build_maze(self.maze, self.maze_gray, (32, 32))
         
         self.maze_node = render.attachNewNode(maze_obj)
         self.maze_node.setTwoSided(True)
@@ -136,14 +135,6 @@ class Maze(ShowBase):
         self.setupCameraControls(props)
         self.win.requestProperties(props)
         
-        dlight = DirectionalLight('dlight')
-        dlight.setColor((1, 1, 1, 1))
-        dlnp = render.attachNewNode(dlight)
-        dlnp.setHpr(0, -60, 180)
-        render.setLight(dlnp)
-        dlight.setShadowCaster(True, 512, 512)
-        render.setShaderAuto()
-        
         self.maze = cv2.imread("generated/maze.png")
         self.maze_gray = cv2.imread("generated/maze_gray.png", cv2.IMREAD_GRAYSCALE)
         self.video = self.loadTexture("generated/maze.mpg")  # imports video onto map
@@ -157,6 +148,13 @@ class Maze(ShowBase):
         self.createMaze()
         self.maze_node.setTexture(self.video)
         
+        dlight = DirectionalLight('dlight')
+        dlight.setColor((1, 1, 1, 1))
+        dlnp = render.attachNewNode(dlight)
+        dlnp.setHpr(0, -60, 180)
+        self.maze_node.setLight(dlnp)
+        dlight.setShadowCaster(True, 512, 512)
+        render.setShaderAuto()
         
         self.run_data = json.load(open("generated/output.json"))
         self.amangi = {}
