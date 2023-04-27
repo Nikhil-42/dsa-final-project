@@ -9,7 +9,9 @@ from direct.actor.Actor import Actor
 
 
 
-def make_grid(width, height, depth):
+def make_grid(width, height, depth, texture_size=None):
+    if texture_size is None:
+        texture_size = (width-1, height-1)
     format = GeomVertexFormat.getV3n3cpt2()
     vdata = GeomVertexData('grid', format, Geom.UHStatic)
     
@@ -24,12 +26,12 @@ def make_grid(width, height, depth):
                 vertex.addData3f(x, y, z)
                 normal.addData3f(0, 0, 1)
                 color.addData4f(1, 1, 1, 1)
-                texcoord.addData2f(x/(width-1), 1 - y/(height-1))
+                texcoord.addData2f(x/texture_size[0], 1 - y/texture_size[1]-1)
     
     return vdata
 
-def build_maze(maze, maze_gray):
-    vdata = make_grid(maze.shape[1] + 1, maze.shape[0] + 1, 2)
+def build_maze(maze, maze_gray, texture_size=None):
+    vdata = make_grid(maze.shape[1] + 1, maze.shape[0] + 1, 2, texture_size)
     
     def idx(x, y, z):
         return z + x * 2 + y * 2 * (maze.shape[1] + 1)

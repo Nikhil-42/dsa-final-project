@@ -4,23 +4,20 @@ import numpy as np
 
 
 class VideoWriter:
-    def __init__(self, filepath, fps, shape, input_args: dict|None = None, output_args: dict|None = None):
+    def __init__(self, filepath, fps, input_res, filters=list[tuple[str, dict]], input_args: dict|None = None, output_args: dict|None = None):
         if input_args is None:
             input_args = {}
         if output_args is None:
             output_args = {}
         input_args['framerate'] = fps
-        input_args['pix_fmt'] = 'bgr24'
-        input_args['s'] = '{}x{}'.format(*shape)
-        self.filepath = filepath
-        self.shape = shape
-        self.input_args = input_args
-        self.output_args = output_args
+        if 'pix_fmt' not in input_args:
+            input_args['pix_fmt'] = 'bgr24'
+        input_args['s'] = '{}x{}'.format(*input_res)
+        self.ffpmeg = ffmpeg.input('pipe:', format='rawvideo', **input_args)
+        for filter_name, filter_args in filters:
+            self.ffpmeg = self.ffpmeg.filter(filter_name, **filter_args)
         self.process = (
-            ffmpeg
-                .input('pipe:', format='rawvideo', **input_args)
-                .filter('fps', fps=30, round='up')
-                .output(self.filepath, **output_args)
+                self.ffpmeg.output(filepath, **output_args)
                 .overwrite_output()
                 .run_async(pipe_stdin=True)
         )

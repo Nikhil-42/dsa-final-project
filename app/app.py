@@ -11,7 +11,6 @@ import cv2
 class Maze(ShowBase):
     
     def setupCameraControls(self, props: WindowProperties):
-        # create reasonable camera controls
         self.disableMouse()
         
         # Get the current keyboard layout.
@@ -51,7 +50,7 @@ class Maze(ShowBase):
         self.taskMgr.add(rotate_camera, "rotateCamera")
         
     # imports a texture
-    def importTexture(self, path: str):
+    def loadTexture(self, path: str):
         texture = loader.loadTexture(path)
         texture.setMagfilter(SamplerState.FT_nearest)
         texture.setMinfilter(SamplerState.FT_nearest)
@@ -69,10 +68,14 @@ class Maze(ShowBase):
         text.setFont(cmr12)
     
     def createMaze(self):
-        maze_obj = build_maze(self.maze, self.maze_gray)
+        maze_obj = build_maze(self.maze, self.maze_gray, (512, 512))
         
         self.maze_node = render.attachNewNode(maze_obj)
         self.maze_node.setTwoSided(True)
+        self.maze_node.setScale(5)
+        
+    def idx2world(self, idx):
+        return ((idx % self.maze.shape[1] + 0.5) * self.maze_node.getSx(), (idx // self.maze.shape[1] + 0.5) * self.maze_node.getSy(), 0)
         
     async def follow_path(self, path, agent):
         self.amangi[agent].loop("run")
@@ -81,8 +84,10 @@ class Maze(ShowBase):
         video_maze_length = self.video.video_width
         
         for node in path:
-            self.amangi[agent].setPos((node % len(self.maze) + 0.5), (node // len(self.maze)+ 0.5), 1)
-            await Task.pause(self.maze_gray[node // len(self.maze), node % len(self.maze)] / 255 / 100000)
+            target_pos = self.idx2world(node)
+            self.amangi[agent].setPos(target_pos)
+            self.amangi[agent].lookAt(target_pos)
+            await Task.pause(self.maze_gray[node // self.maze.shape[1], node % self.maze.shape[1]] / 256)
         self.amangi[agent].stop()
         self.runner_finished[agent] = True
         return Task.done
@@ -110,7 +115,7 @@ class Maze(ShowBase):
         for agent in self.run_data:
             node = self.run_data[agent]["paths"][rotation][0]
             self.runner_finished[agent] = False
-            self.amangi[agent].setPos((node % len(self.maze) + 0.5), (node // len(self.maze)+ 0.5), 1)
+            self.amangi[agent].setPos(self.idx2world(node))
             self.amangi[agent].stop()
                 
             self.taskMgr.doMethodLater(self.run_data[agent]['finish_timestamps'][rotation], self.follow_path, "FollowPath"+agent, extraArgs=[self.run_data[agent]["paths"][rotation], agent])
@@ -133,13 +138,13 @@ class Maze(ShowBase):
         
         self.maze = cv2.imread("generated/maze.png")
         self.maze_gray = cv2.imread("generated/maze_gray.png", cv2.IMREAD_GRAYSCALE)
-        self.video = self.importTexture("generated/maze.mpg")  # imports video onto map
+        self.video = self.loadTexture("generated/maze.mpg")  # imports video onto map
         self.video.stop()
         
         
         self.rotation_frames = []
         for rotation in range(4):
-            self.rotation_frames.append(self.importTexture(f"generated/solved_maze_{rotation}.png"))
+            self.rotation_frames.append(self.loadTexture(f"generated/solved_maze_{rotation}.png"))
         
         self.createMaze()
         self.maze_node.setTexture(self.video)
@@ -155,11 +160,13 @@ class Maze(ShowBase):
             y -= dy
             new_amangus = Actor("models/amangus.glb")
             new_amangus.reparentTo(render)  # reparents amangus to render
+            new_amangus.setScale(2)  # scales amangus
             self.amangi[agent] = new_amangus
 
         self.setupRunners(0)
 
-        self.camera.setPos((255, 255, 1000))
+        self.camera.setPos((self.maze.shape[1] * self.maze_node.getSx() / 2, self.maze.shape[0] * self.maze_node.getSy() / 2, 500))
+        self.camera.setHpr((0, -90, 0))
         
 
 app = Maze()

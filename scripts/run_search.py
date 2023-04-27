@@ -28,8 +28,6 @@ def getArguments():
 
 
 if __name__ == '__main__':
-    FPS = 3600
-
     # this is for our heuristic functions
     def astar_pathing(*args, **kwargs):
         """A* pathing algorithm."""
@@ -42,10 +40,13 @@ if __name__ == '__main__':
 
     args = getArguments()  # a boolean for each algorithm to run
     if len(sys.argv) == 1:
-        raise ValueError("Please enter an algorithm to run")  # no arguments
+        args.dijkstras = True
+        args.astar = True
+        args.bfs = True
+        args.dfs = True
     elif len(sys.argv) > 4:
         raise ValueError("Please enter a maximum of four algorithms to run")
-
+        
     if (args.dijkstras):
         print("added dikjstras")
         agents.append(
@@ -60,7 +61,7 @@ if __name__ == '__main__':
     if (args.dfs):
         print("added dfs")
         agents.append(("DFS", dfs, np.array((127, 127, 0), dtype=np.uint8)))
-    # elif (args.bellman_ford):
+    # if (args.bellman_ford):
     #    agents.append(("Bellman Ford", bellman_ford, np.array((127, 127, 127), dtype=np.uint8)))
 
      # initial maze
@@ -73,7 +74,13 @@ if __name__ == '__main__':
     center_idx = (maze.shape[1] * maze.shape[0]) // 2
 
     # ffmpeg -i generated/video/maze_%02d.png -r 360 maze.mp4 to covert folder of pngs to video
-    with VideoWriter('generated/maze.mpg', FPS, (maze.shape[1], maze.shape[0]), output_args={'s': "512x512"}) as video_writer:
+    FPS = 3600
+
+    with VideoWriter('generated/maze.mpg', FPS, (maze.shape[1], maze.shape[0]), filters=[
+            ('fps', {'fps':60, 'round':'up'}),
+            ('pad', {'width': 512, 'height': 512, 'x': 0, 'y': 0, 'color': 'black'}),
+        ], 
+                     output_args={'vcodec': 'libx264','crf': 0}) as video_writer:
         for name, _, color in agents:
             output_data[name] = {}
             output_data[name]['times'] = []
@@ -82,12 +89,13 @@ if __name__ == '__main__':
             output_data[name]['fps'] = FPS
             output_data[name]['color'] = color.tolist()
 
-
+        # Pad with zeros to make the maze a power of 2
+        tmp = np.zeros((512, 512, 3))
         for rotation in range(4):
             current_starting_positions = list(itertools.islice(
                 itertools.cycle(starting_positions), rotation, rotation + len(agents)))
-            cv2.imwrite(f"generated/solved_maze_{rotation}.png", animate_agents(
-                maze, agents, current_starting_positions, video_writer))
+            tmp[:maze.shape[1], :maze.shape[0]] = animate_agents(maze, agents, current_starting_positions, video_writer)
+            cv2.imwrite(f"generated/solved_maze_{rotation}.png", tmp)
 
         for name, _, color in agents:
             output_data[name]['finish_timestamps'] = [
