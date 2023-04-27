@@ -78,8 +78,8 @@ class Maze(ShowBase):
         self.amangi[agent].loop("run")
         for node in path:
             # TODO make this not hard coded and fix the scaling
-            self.amangi[agent].setPos(node % 317 * + 0.5, 512 - (node // 317 + 0.5), 1)
-            await Task.pause(self.maze_gray[node // 317, node % 317] / 255 / 100000)
+            self.amangi[agent].setPos((node % len(self.maze)* + 0.5), (node // len(self.maze)+ 0.5), 1)
+            await Task.pause(self.maze_gray[node // len(self.maze), node % len(self.maze)] / 255 / 100000)
         self.amangi[agent].stop()
         self.runner_finished[agent] = True
         return Task.done
@@ -104,7 +104,7 @@ class Maze(ShowBase):
         for agent in self.run_data:
             node = self.run_data[agent]["paths"][rotation][0]
             self.runner_finished[agent] = False
-            self.amangi[agent].setPos(node % 317 * 513/317 + 0.5, 513 - (node // 317 * 513/317 + 0.5), 1)
+            self.amangi[agent].setPos((node % len(self.maze)* self.video.video_width/len(self.maze) + 0.5),(node // len(self.maze)* self.video.video_width/len(self.maze)+ 0.5), 1)
             self.amangi[agent].stop()
                 
             self.taskMgr.doMethodLater(self.run_data[agent]['finish_timestamps'][rotation], self.follow_path, "FollowPath"+agent, extraArgs=[self.run_data[agent]["paths"][rotation], agent])
