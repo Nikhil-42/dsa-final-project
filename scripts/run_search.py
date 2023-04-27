@@ -82,6 +82,7 @@ if __name__ == '__main__':
             output_data[name]['fps'] = FPS
             output_data[name]['color'] = color.tolist()
 
+
         for rotation in range(4):
             current_starting_positions = list(itertools.islice(
                 itertools.cycle(starting_positions), rotation, rotation + len(agents)))
@@ -91,6 +92,8 @@ if __name__ == '__main__':
         for name, _, color in agents:
             output_data[name]['finish_timestamps'] = [
                 frame / FPS for frame in output_data[name]['finish_frames']]
+
+
 
     with open("generated/output.json", "w") as f:
         json.dump(output_data, f)
