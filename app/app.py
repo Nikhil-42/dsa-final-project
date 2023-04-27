@@ -80,13 +80,11 @@ class Maze(ShowBase):
     async def follow_path(self, path, agent):
         self.amangi[agent].loop("run")
         
-        maze_length = len(self.maze)
-        video_maze_length = self.video.video_width
-        
-        for node in path:
-            target_pos = self.idx2world(node)
-            self.amangi[agent].setPos(target_pos)
-            self.amangi[agent].lookAt(target_pos)
+        for i in range(len(path)):
+            node = path[i]
+            next_node = path[i+1] if i+1 < len(path) else path[i]
+            self.amangi[agent].setPos(self.idx2world(node))
+            self.amangi[agent].lookAt(self.idx2world(next_node))
             await Task.pause(self.maze_gray[node // self.maze.shape[1], node % self.maze.shape[1]] / 256)
         self.amangi[agent].stop()
         self.runner_finished[agent] = True
@@ -114,8 +112,10 @@ class Maze(ShowBase):
         
         for agent in self.run_data:
             node = self.run_data[agent]["paths"][rotation][0]
+            next_node = self.run_data[agent]["paths"][rotation][1]
             self.runner_finished[agent] = False
             self.amangi[agent].setPos(self.idx2world(node))
+            self.amangi[agent].lookAt(self.idx2world(next_node))
             self.amangi[agent].stop()
                 
             self.taskMgr.doMethodLater(self.run_data[agent]['finish_timestamps'][rotation], self.follow_path, "FollowPath"+agent, extraArgs=[self.run_data[agent]["paths"][rotation], agent])
