@@ -1,6 +1,6 @@
 import cv2  # type: ignore
 import numpy as np
-from searches import dijkstra, astar, bfs, dfs
+from searches import dijkstra, astar, bfs, dfs, manhattan_distance
 from utils import VideoWriter
 from animation import animate_agents, output_data
 from typing import Any
@@ -47,14 +47,18 @@ if __name__ == '__main__':
         raise ValueError("Please enter a maximum of four algorithms to run")
 
     if (args.dijkstras):
+        print("added dikjstras")
         agents.append(
             ("Dijkstra", dijkstra, np.array((0, 0, 128), dtype=np.uint8)))
-    elif (args.astar):
+    if (args.astar):
+        print("added astar")
         agents.append(
             ("A*", astar_pathing, np.array((0, 128, 0), dtype=np.uint8)))
-    elif (args.bfs):
+    if (args.bfs):
+        print("added bfs")
         agents.append(("BFS", bfs, np.array((128, 0, 0), dtype=np.uint8)))
-    elif (args.dfs):
+    if (args.dfs):
+        print("added dfs")
         agents.append(("DFS", dfs, np.array((127, 127, 0), dtype=np.uint8)))
     # elif (args.bellman_ford):
     #    agents.append(("Bellman Ford", bellman_ford, np.array((127, 127, 127), dtype=np.uint8)))

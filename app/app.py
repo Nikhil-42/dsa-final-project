@@ -141,10 +141,10 @@ class Maze(ShowBase):
         self.run_data = json.load(open("generated/output.json"))
         self.amangi = {}
         self.runner_finished = {}
-        y = 0.55
+        y = 0.85
         dy = 0.1
         for agent in self.run_data:
-            self.addText(f"{agent}: {sum(self.run_data[agent]['times']) * 1000}", (-1.7, 0, y), tuple(self.run_data[agent]["color"][::-1] + [1]))
+            self.addText(f"{agent}: {round((sum(self.run_data[agent]['times']) * 1000), 2)} ms.", (-1.7, 0, y), tuple(self.run_data[agent]["color"][::-1] + [1]))
             y += dy
 
             new_amangus = Actor("models/amangus.glb")
