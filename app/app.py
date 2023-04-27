@@ -77,7 +77,6 @@ class Maze(ShowBase):
     async def follow_path(self, path, agent):
         self.amangi[agent].loop("run")
         for node in path:
-            # TODO make this not hard coded and fix the scaling
             self.amangi[agent].setPos((node % len(self.maze)* + 0.5), (node // len(self.maze)+ 0.5), 1)
             await Task.pause(self.maze_gray[node // len(self.maze), node % len(self.maze)] / 255 / 100000)
         self.amangi[agent].stop()
