@@ -6,7 +6,6 @@ from typing import Any
 
 output_data: dict[str, dict[str, Any]] = {}
 
-
 def solve_path(backlink_table: np.ndarray, start_node: int, stop_node: int):
     """Solve the path from the distance table."""
     path = [stop_node]
@@ -55,6 +54,7 @@ def animate_agents(maze: np.ndarray, search_agents, starting_positions, video_wr
                 done[i] = True
                 output_data[agent]['times'].append(time_taken)
                 output_data[agent]['paths'].append(path)
+                output_data[agent]['path_lengths'].append(int(sum(maze[idx_to_pos(node, WIDTH)[::-1]] for node in path)))
                 print()
                 print(f"{agent} took {time_taken} seconds")
                 print(

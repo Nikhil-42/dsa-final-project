@@ -85,6 +85,7 @@ if __name__ == '__main__':
             output_data[name] = {}
             output_data[name]['times'] = []
             output_data[name]['paths'] = []
+            output_data[name]['path_lengths'] = []
             output_data[name]['finish_frames'] = []
             output_data[name]['fps'] = FPS
             output_data[name]['color'] = color.tolist()
@@ -100,7 +101,6 @@ if __name__ == '__main__':
         for name, _, color in agents:
             output_data[name]['finish_timestamps'] = [
                 frame / FPS for frame in output_data[name]['finish_frames']]
-
 
 
     with open("generated/output.json", "w") as f:
