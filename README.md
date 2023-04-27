@@ -29,7 +29,10 @@ The following commands should then be ran in the terminal:
 
 1. To generate the maze ```python maze-generation/generate_maze.py ```
 
-2. To output a 2D video of the algorithms ```python scripts/run_search.py```
+2. To output a 2D video of the algorithms ```python scripts/run_search.py {arguments}```
+
+* The following arguments can be added to specify which algorithm to use
+
 
 3. To render the maze in 3D with Panda3D ```python scripts/render.py```
 
