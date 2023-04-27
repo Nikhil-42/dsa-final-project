@@ -145,8 +145,7 @@ class Maze(ShowBase):
         dy = 0.1
         for agent in self.run_data:
             self.addText(f"{agent}: {round((sum(self.run_data[agent]['times']) * 1000), 2)} ms.", (-1.7, 0, y), tuple(self.run_data[agent]["color"][::-1] + [1]))
-            y += dy
-
+            y -= dy
             new_amangus = Actor("models/amangus.glb")
             new_amangus.reparentTo(render)  # reparents amangus to render
             self.amangi[agent] = new_amangus
