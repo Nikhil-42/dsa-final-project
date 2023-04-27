@@ -5,7 +5,7 @@ Our DSA-Final-Project is a 3D path finding algorithm visualizer.  The maze is 31
 * A* Search Algorithm
 * Depth First Search
 
-Each algorithm starts in a seperate corner, each with a corresponding color.  The different colors on the map represent different terrain types that hinder player movement  according to the intensity of the color.  The time taken for each algorithm to reach the center of the maze is recorded, when the center is reached a black line tracing the shortest path is displayed.  The maze is stored as an adjacency list with edge weights determined by walls and terrain types.
+Each algorithm starts in a seperate corner, each with a corresponding color.  The user can input between 1 and 4 algorithms to run at the same time.  The different colors on the map represent different terrain types that hinder player movement  according to the intensity of the color.  The time taken for each algorithm to reach the center of the maze is recorded, when the center is reached a black line tracing the shortest path is displayed.  The maze is stored as an adjacency list with edge weights determined by walls and terrain types.
 
 <p align="center">
   <img src="https://user-images.githubusercontent.com/84941950/234443340-c45f0db0-dc1b-4b1d-bf11-9039706fcce8.gif" alt="animated" 
@@ -30,11 +30,13 @@ The following commands should then be ran in the terminal:
 1. To generate the maze ```python maze-generation/generate_maze.py ```
 
 2. To output a 2D video of the algorithms ```python scripts/run_search.py {arguments}```
+    * The following arguments can be added to specify which algorithm to use
+    * ```--dijkstras``` or ```-dk``` to run Dijkstra's Algorithm
+    * ```--bfs``` or ```-b``` to run a Breadth First Search
+    * ```--dfs``` or ```-d``` to run a Depth First Search
+    * ```--astar``` or ```-a``` to run A* Algorithm
 
-* The following arguments can be added to specify which algorithm to use
-
-
-3. To render the maze in 3D with Panda3D ```python scripts/render.py```
+3. To render the maze in 3D with Panda3D ```python app/app.py```
 
 ## Notes
 The program uses a 2D maze as a png that looks like the following:
