@@ -115,7 +115,7 @@ def getArguments():
     parser.add_argument("-b",'--bfs', help='Breadth First Search', default=False, action='store_true')
     parser.add_argument("-dj",'--dijkstras', help='Dijkstras Algorithm', default=False,  action='store_true')
     parser.add_argument("-a",'--astar', help='A* Algorithm', default=False, action='store_true')
-    parser.add_argument("-bf",'--bellman_ford', help='Bellman Ford Algorithm', default=False, action='store_true')
+    #parser.add_argument("-bf",'--bellman_ford', help='Bellman Ford Algorithm', default=False, action='store_true')
     return parser.parse_args()
     
 
@@ -145,8 +145,8 @@ if __name__ == '__main__':
         agents.append(("BFS", bfs, np.array((128, 0, 0), dtype=np.uint8)))
     elif (args.dfs):
         agents.append(("DFS", dfs, np.array((127, 127, 0), dtype=np.uint8)))
-    elif (args.bellman_ford):
-        agents.append(("Bellman Ford", bellman_ford, np.array((127, 127, 127), dtype=np.uint8)))
+    #elif (args.bellman_ford):
+    #    agents.append(("Bellman Ford", bellman_ford, np.array((127, 127, 127), dtype=np.uint8)))
         
 
     
