@@ -23,7 +23,6 @@ def getArguments():
                         default=False,  action='store_true')
     parser.add_argument("-a", '--astar', help='A* Algorithm',
                         default=False, action='store_true')
-    # parser.add_argument("-bf",'--bellman_ford', help='Bellman Ford Algorithm', default=False, action='store_true')
     return parser.parse_args()
 
 
@@ -46,7 +45,7 @@ if __name__ == '__main__':
         args.dfs = True
     elif len(sys.argv) > 4:
         raise ValueError("Please enter a maximum of four algorithms to run")
-        
+
     if (args.dijkstras):
         print("added dikjstras")
         agents.append(
@@ -61,8 +60,6 @@ if __name__ == '__main__':
     if (args.dfs):
         print("added dfs")
         agents.append(("DFS", dfs, np.array((127, 127, 0), dtype=np.uint8)))
-    # if (args.bellman_ford):
-    #    agents.append(("Bellman Ford", bellman_ford, np.array((127, 127, 127), dtype=np.uint8)))
 
      # initial maze
     maze = cv2.imread("generated/maze.png")
@@ -77,10 +74,11 @@ if __name__ == '__main__':
     FPS = 3600
 
     with VideoWriter('generated/maze.mpg', FPS, (maze.shape[1], maze.shape[0]), filters=[
-            ('fps', {'fps':60, 'round':'up'}),
-            ('pad', {'width': 512, 'height': 512, 'x': 0, 'y': 0, 'color': 'black'}),
-        ], 
-                     output_args={'vcodec': 'libx264','crf': 0}) as video_writer:
+        ('fps', {'fps': 60, 'round': 'up'}),
+        ('pad', {'width': 512, 'height': 512,
+                 'x': 0, 'y': 0, 'color': 'black'}),
+    ],
+            output_args={'vcodec': 'libx264', 'crf': 0}) as video_writer:
         for name, _, color in agents:
             output_data[name] = {}
             output_data[name]['times'] = []
@@ -95,13 +93,13 @@ if __name__ == '__main__':
         for rotation in range(4):
             current_starting_positions = list(itertools.islice(
                 itertools.cycle(starting_positions), rotation, rotation + len(agents)))
-            tmp[:maze.shape[1], :maze.shape[0]] = animate_agents(maze, agents, current_starting_positions, video_writer)
+            tmp[:maze.shape[1], :maze.shape[0]] = animate_agents(
+                maze, agents, current_starting_positions, video_writer)
             cv2.imwrite(f"generated/solved_maze_{rotation}.png", tmp)
 
         for name, _, color in agents:
             output_data[name]['finish_timestamps'] = [
                 frame / FPS for frame in output_data[name]['finish_frames']]
-
 
     with open("generated/output.json", "w") as f:
         json.dump(output_data, f)
