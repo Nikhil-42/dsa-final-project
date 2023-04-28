@@ -75,10 +75,11 @@ if __name__ == '__main__':
 
     # ffmpeg -i generated/video/maze_%02d.png -r 360 maze.mp4 to covert folder of pngs to video
     FPS = 3600
+    TEXTURE_SHAPE = (512, 512)
 
     with VideoWriter('generated/maze.mpg', FPS, (maze.shape[1], maze.shape[0]), filters=[
-            ('fps', {'fps':60, 'round':'up'}),
-            ('pad', {'width': 512, 'height': 512, 'x': 0, 'y': 0, 'color': 'black'}),
+            ('fps', {'fps':27, 'round':'up'}),
+            ('pad', {'width': TEXTURE_SHAPE[0], 'height': TEXTURE_SHAPE[1], 'x': 0, 'y': 0, 'color': 'black'}),
         ], 
                      output_args={'vcodec': 'libx264','crf': 0}) as video_writer:
         for name, _, color in agents:
@@ -91,11 +92,11 @@ if __name__ == '__main__':
             output_data[name]['color'] = color.tolist()
 
         # Pad with zeros to make the maze a power of 2
-        tmp = np.zeros((512, 512, 3))
+        tmp = np.zeros((*TEXTURE_SHAPE[::-1], 3))
         for rotation in range(4):
             current_starting_positions = list(itertools.islice(
                 itertools.cycle(starting_positions), rotation, rotation + len(agents)))
-            tmp[:maze.shape[1], :maze.shape[0]] = animate_agents(maze, agents, current_starting_positions, video_writer)
+            tmp[:maze.shape[0], :maze.shape[1]] = animate_agents(maze, agents, current_starting_positions, video_writer)
             cv2.imwrite(f"generated/solved_maze_{rotation}.png", tmp)
 
         for name, _, color in agents:

@@ -17,7 +17,7 @@ def add_terrain(maze, average_radius=60, colors=((255,0,0), (0,255,0), (0,0,255)
         random_color_index = np.random.randint(len(colors))
         random_color = colors[random_color_index]
 
-        radius = int(random.normalvariate(average_radius, 5))
+        radius = int(abs(random.normalvariate(average_radius, average_radius)))
         center = (random_x, random_y)
 
         # draws the circle
@@ -93,7 +93,7 @@ if __name__ == '__main__':
     WIDTH = 317
     HEIGHT = 317
     
-    maze = generate_maze(WIDTH, HEIGHT)
+    maze = generate_maze(WIDTH, HEIGHT) # * (np.random.random((HEIGHT, WIDTH)) < 0.9)
     
     # Convert to BGR
     maze = cv2.cvtColor((maze * 255).astype(np.uint8), cv2.COLOR_GRAY2BGR)
@@ -104,6 +104,7 @@ if __name__ == '__main__':
     GRAY = (63, 63, 63)
     YELLOW = (0, 63, 63)
     CYAN = (63, 63, 0)
+    BRIGHT_YELLOW = (0, 127, 127)
     MAGENTA = (63, 0, 63)
     RED = (0, 0, 63)
     GREEN = (0, 63, 0)

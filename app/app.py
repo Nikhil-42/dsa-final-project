@@ -69,7 +69,7 @@ class Maze(ShowBase):
         text.setFont(cmr12)
     
     def createMaze(self):
-        maze_obj = build_maze(self.maze, self.maze_gray, (32, 32))
+        maze_obj = build_maze(self.maze, self.maze_gray, (512, 512))
         
         self.maze_node = render.attachNewNode(maze_obj)
         self.maze_node.setTwoSided(True)

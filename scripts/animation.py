@@ -31,7 +31,7 @@ def animate_agents(maze: np.ndarray, search_agents, starting_positions, video_wr
     adj_list = build_adj_list(maze)
 
     # Label the center index of the maze
-    center_idx = (maze.shape[1] * maze.shape[0]) // 2
+    center_idx = (WIDTH * HEIGHT) // 2
 
     # Instantiate the agents' search algorithms
     pathings = [pathing_func(adj_list, pos_to_idx(pos, WIDTH), center_idx) for (
